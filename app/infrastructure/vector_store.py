@@ -25,6 +25,7 @@ class VectorStore:
             name=settings.CHROMA_COLLECTION_NAME,
             metadata={"hnsw:space": "cosine"},
         )
+    
 
     # ------------------------------------------------------------------
     # Write

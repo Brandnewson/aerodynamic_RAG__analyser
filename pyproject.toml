@@ -3,7 +3,7 @@ name = "aerodynamic-rag-analyser"
 version = "0.1.0"
 description = "AI-augmented aerodynamic concept evaluation API using Retrieval-Augmented Generation"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
