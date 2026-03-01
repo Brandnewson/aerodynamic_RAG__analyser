@@ -24,7 +24,6 @@ from pydantic import BaseModel, Field, field_validator
 class ConceptStatus(str, Enum):
     SUBMITTED = "SUBMITTED"
     ANALYSED = "ANALYSED"
-    ARCHIVED = "ARCHIVED"
 
 
 # ---------------------------------------------------------------------------
@@ -124,6 +123,25 @@ class ConceptListResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class Citation(BaseModel):
+    """arXiv paper citation metadata for attribution."""
+
+    arxiv_id: str | None = Field(None, description="arXiv identifier, e.g. '2301.12345v2'")
+    title: str = Field(..., description="Paper title")
+    authors: str = Field(..., description="Comma-separated author names")
+    published: str | None = Field(None, description="Publication date (ISO format)")
+    url: str | None = Field(None, description="Full arXiv URL")
+
+
+class RetrievedChunk(BaseModel):
+    """A single retrieved literature chunk with citation and similarity."""
+
+    text: str = Field(..., description="The actual text chunk retrieved")
+    chunk_index: int = Field(..., description="Chunk position in source document")
+    similarity_score: float = Field(..., ge=0.0, le=1.0, description="Cosine similarity")
+    citation: Citation = Field(..., description="Source paper metadata")
+
+
 class SimilarReference(BaseModel):
     title: str
     similarity_score: float = Field(..., ge=0.0, le=1.0)
@@ -140,6 +158,14 @@ class EvaluationResponse(BaseModel):
     tradeoffs: dict[str, str]
     regulatory_flags: list[str]
     similar_references: list[SimilarReference]
+    existing_implementations: list[str] = Field(
+        default_factory=list,
+        description="Real-world racing teams or vehicles that have implemented similar concepts"
+    )
+    retrieved_context: list[RetrievedChunk] = Field(
+        default_factory=list,
+        description="Literature chunks retrieved from ChromaDB that informed this evaluation"
+    )
     created_at: datetime
 
     model_config = {"from_attributes": True}

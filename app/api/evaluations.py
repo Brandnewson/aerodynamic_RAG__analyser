@@ -63,7 +63,24 @@ def evaluate_concept(
         )
 
     evaluation = rag_service.evaluate_concept(db, concept)
-    return evaluation  # type: ignore[return-value]
+    
+    # rag_service returns (evaluation, retrieved_chunks)
+    evaluation_model, retrieved_chunks = evaluation
+    
+    # Build response with retrieved context
+    return EvaluationResponse(
+        id=evaluation_model.id,
+        concept_id=evaluation_model.concept_id,
+        novelty_score=evaluation_model.novelty_score,
+        confidence_score=evaluation_model.confidence_score,
+        mechanisms=evaluation_model.mechanisms,
+        tradeoffs=evaluation_model.tradeoffs,
+        regulatory_flags=evaluation_model.regulatory_flags,
+        similar_references=evaluation_model.similar_references,
+        existing_implementations=evaluation_model.existing_implementations,
+        retrieved_context=retrieved_chunks,
+        created_at=evaluation_model.created_at,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -84,6 +101,7 @@ def get_evaluation(
     concept_id: int,
     db: Session = Depends(get_db),
 ) -> EvaluationResponse:
+    """Retrieve stored evaluation and re-fetch retrieved context from ChromaDB."""
     concept = concept_service.get_concept_by_id(db, concept_id)
     if concept is None:
         raise HTTPException(
@@ -100,4 +118,22 @@ def get_evaluation(
             ),
         )
 
-    return concept.evaluation  # type: ignore[return-value]
+    eval_model = concept.evaluation
+    
+    # Re-run vector search to get retrieved context
+    # (Context is not persisted, but ChromaDB still has the same chunks)
+    retrieved_chunks = rag_service.get_retrieved_context_for_concept(concept)
+    
+    return EvaluationResponse(
+        id=eval_model.id,
+        concept_id=eval_model.concept_id,
+        novelty_score=eval_model.novelty_score,
+        confidence_score=eval_model.confidence_score,
+        mechanisms=eval_model.mechanisms,
+        tradeoffs=eval_model.tradeoffs,
+        regulatory_flags=eval_model.regulatory_flags,
+        similar_references=eval_model.similar_references,
+        existing_implementations=eval_model.existing_implementations,
+        retrieved_context=retrieved_chunks,
+        created_at=eval_model.created_at,
+    )

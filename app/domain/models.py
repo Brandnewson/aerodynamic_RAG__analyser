@@ -35,7 +35,6 @@ class ConceptStatus(str, enum.Enum):
 
     SUBMITTED = "SUBMITTED"   # Created, not yet evaluated
     ANALYSED = "ANALYSED"     # RAG + LLM evaluation complete
-    ARCHIVED = "ARCHIVED"     # Soft-removed from active queries
 
 
 # ---------------------------------------------------------------------------
@@ -116,6 +115,8 @@ class ConceptEvaluation(Base):
     regulatory_flags: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
     # e.g. [{"title": "...", "similarity_score": 0.87}]
     similar_references: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
+    # e.g. ["Mercedes W15 (2024) - rear wing DRS flap", "Ferrari SF-24 - F-duct variant"]
+    existing_implementations: Mapped[list] = mapped_column(JSON, default=list, nullable=False)
 
     # Full raw LLM response — kept for debugging / audit
     llm_raw_response: Mapped[str | None] = mapped_column(Text, nullable=True)

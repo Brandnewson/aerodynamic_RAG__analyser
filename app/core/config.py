@@ -25,10 +25,10 @@ class Settings(BaseSettings):
 
     # OpenAI
     OPENAI_API_KEY: str = ""
-    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_MODEL: str = "gpt-4o"  # Full GPT-4o for better reasoning (upgraded from mini)
 
     # RAG retrieval
-    RETRIEVAL_TOP_K: int = 5
+    RETRIEVAL_TOP_K: int = 10
 
 
 # Singleton — import this everywhere instead of re-instantiating

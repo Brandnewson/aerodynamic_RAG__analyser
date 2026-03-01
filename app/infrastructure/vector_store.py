@@ -88,6 +88,10 @@ class VectorStore:
 
     def collection_name(self) -> str:
         return self._collection.name
+    
+    def get_collection(self):
+        """Return the underlying ChromaDB collection for health checks."""
+        return self._collection
 
 
 # ---------------------------------------------------------------------------

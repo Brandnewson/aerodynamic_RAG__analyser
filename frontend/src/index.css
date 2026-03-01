@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-cockpit-border;
+  }
+
+  body {
+    @apply bg-cockpit-bg text-cockpit-text-primary font-body antialiased;
+    background-image: 
+      var(--bg-grid),
+      radial-gradient(circle at 20% 50%, rgba(255, 149, 0, 0.05) 0%, transparent 50%),
+      radial-gradient(circle at 80% 50%, rgba(0, 217, 255, 0.03) 0%, transparent 50%);
+    background-size: 40px 40px, 100% 100%, 100% 100%;
+    background-attachment: fixed, fixed, fixed;
+  }
+
+  :root {
+    --bg-grid: linear-gradient(to right, rgba(255, 149, 0, 0.03) 1px, transparent 1px),
+               linear-gradient(to bottom, rgba(255, 149, 0, 0.03) 1px, transparent 1px);
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-cockpit-panel;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-cockpit-primary/30 hover:bg-cockpit-primary/50;
+    border-radius: 4px;
+  }
+
+  /* Selection */
+  ::selection {
+    @apply bg-cockpit-primary/30 text-cockpit-text-primary;
+  }
+}
+
+@layer components {
+  /* Panel styling */
+  .panel {
+    @apply bg-cockpit-panel border border-cockpit-border rounded-lg overflow-hidden;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 149, 0, 0.1);
+  }
+
+  .panel-header {
+    @apply border-b border-cockpit-border bg-cockpit-highlight/30 px-6 py-4;
+  }
+
+  /* Button styling */
+  .btn {
+    @apply px-4 py-2 rounded font-medium transition-all duration-200;
+    @apply border border-transparent;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.875rem;
+  }
+
+  .btn-primary {
+    @apply btn bg-cockpit-primary text-black;
+    box-shadow: 0 0 15px rgba(255, 149, 0, 0.3);
+  }
+
+  .btn-primary:hover {
+    @apply bg-cockpit-primary/90;
+    box-shadow: 0 0 25px rgba(255, 149, 0, 0.5);
+  }
+
+  .btn-secondary {
+    @apply btn bg-cockpit-secondary text-black;
+    box-shadow: 0 0 15px rgba(0, 217, 255, 0.3);
+  }
+
+  .btn-secondary:hover {
+    @apply bg-cockpit-secondary/90;
+    box-shadow: 0 0 25px rgba(0, 217, 255, 0.5);
+  }
+
+  .btn-outline {
+    @apply btn border-cockpit-primary text-cockpit-primary;
+  }
+
+  .btn-outline:hover {
+    @apply bg-cockpit-primary/10;
+  }
+
+  .btn-danger {
+    @apply btn bg-cockpit-danger text-white;
+  }
+
+  .btn-danger:hover {
+    @apply bg-cockpit-danger/90;
+  }
+
+  /* Input styling */
+  .input {
+    @apply w-full px-4 py-3 bg-cockpit-bg border border-cockpit-border rounded;
+    @apply text-cockpit-text-primary placeholder-cockpit-text-muted;
+    @apply focus:outline-none focus:border-cockpit-primary focus:ring-1 focus:ring-cockpit-primary;
+    @apply transition-all duration-200;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .textarea {
+    @apply input resize-y min-h-[120px];
+  }
+
+  /* Label styling */
+  .label {
+    @apply block text-sm font-medium text-cockpit-text-secondary mb-2;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* Badge styling */
+  .badge {
+    @apply px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider;
+    font-family: 'Rajdhani', sans-serif;
+  }
+
+  .badge-status-submitted {
+    @apply bg-cockpit-secondary/20 text-cockpit-secondary border border-cockpit-secondary/50;
+  }
+
+  .badge-status-analysed {
+    @apply bg-cockpit-success/20 text-cockpit-success border border-cockpit-success/50;
+  }
+
+  /* HUD element */
+  .hud-element {
+    @apply relative overflow-hidden;
+  }
+
+  .hud-element::before {
+    content: '';
+    @apply absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-cockpit-primary to-transparent;
+    animation: scan 3s linear infinite;
+  }
+
+  /* Metric display */
+  .metric {
+    @apply text-center p-4 rounded border border-cockpit-border bg-cockpit-bg/50;
+  }
+
+  .metric-value {
+    @apply text-3xl font-bold text-cockpit-primary;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .metric-label {
+    @apply text-xs text-cockpit-text-muted uppercase tracking-wider mt-1;
+    font-family: 'Rajdhani', sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-glow {
+    text-shadow: 0 0 10px currentColor;
+  }
+
+  .animate-delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animate-delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .animate-delay-400 {
+    animation-delay: 400ms;
+  }
+}
