@@ -119,6 +119,27 @@ def create_app() -> FastAPI:
         
         return diagnostics
 
+    @app.get("/health", tags=["system"], include_in_schema=False)
+    async def legacy_health() -> dict:
+        """Legacy health endpoint maintained for backward compatibility in tests/clients."""
+        return await health()
+
+    @app.get("/api/v1/mcp", tags=["system"], summary="MCP integration info")
+    async def mcp_info() -> dict:
+        """Expose MCP server metadata and startup command for discoverability."""
+        return {
+            "status": "available",
+            "server_name": "AeroInsight RAG MCP Server",
+            "transport": "stdio",
+            "entrypoint": "python -m app.mcp.server",
+            "tools": [
+                "list_concepts",
+                "create_concept",
+                "evaluate_concept",
+                "get_evaluation",
+            ],
+        }
+
     # ------------------------------------------------------------------
     # Global exception handler — catches unhandled 500s and returns JSON
     # ------------------------------------------------------------------

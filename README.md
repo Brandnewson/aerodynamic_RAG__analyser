@@ -144,6 +144,24 @@ Open your browser and navigate to:
 - **API Documentation**: http://localhost:8001/docs
 - **Health Check**: http://localhost:8001/api/v1/health
 
+### 7️⃣ Run MCP Server (Agent Integration)
+
+You can also run AeroInsight as an MCP tool server for agent-native workflows.
+
+```bash
+# From project root, with venv active
+python -m app.mcp.server
+```
+
+Available MCP tools:
+- `list_concepts(status?, page?, page_size?)`
+- `create_concept(title, description, author?, tags?)`
+- `evaluate_concept(concept_id)`
+- `get_evaluation(concept_id)`
+
+Quick API discovery endpoint (REST):
+- `GET /api/v1/mcp`
+
 ---
 
 ## 📖 Usage Guide
