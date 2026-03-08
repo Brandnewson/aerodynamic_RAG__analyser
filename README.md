@@ -83,6 +83,7 @@ GET    /api/v1/health                # System status
 GET    /api/v1/mcp                   # MCP tool discovery
 ```
 
+**Full Documentation**: [API_DOCUMENTATION.pdf](docs/API_DOCUMENTATION.pdf) (includes examples, error codes, authentication)  
 **Interactive Docs**: http://localhost:8001/docs
 
 ---
@@ -150,7 +151,7 @@ curl -X POST http://localhost:8001/api/v1/concepts/{id}/evaluate
 
 - **Architecture Details**: See [ARCHITECTURE.md](ARCHITECTURE.md) for RAG pipeline, database schema, and design decisions
 - **Testing Guide**: See [TESTING.md](TESTING.md) for test suites, error handling, and CI/CD setup
-- **API Documentation**: http://localhost:8001/docs (interactive Swagger UI)
+- **API Documentation**: [PDF](docs/API_DOCUMENTATION.pdf) | [Interactive Swagger UI](http://localhost:8001/docs) | [Markdown](docs/API_DOCUMENTATION.md)
 - **OpenAI API Keys**: https://platform.openai.com/api-keys
 
 ### Technology Docs
