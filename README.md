@@ -35,14 +35,14 @@ python -m venv .venv
 # Linux/Mac:
 source .venv/bin/activate
 
-uv pip install -r requirements.txt
+uv sync
 
 # 2. Configure environment
 # Create .env file with:
 OPENAI_API_KEY=sk-proj-your-key-here
 DATABASE_URL=sqlite:///./database.db
 CHROMA_PERSIST_DIR=./chroma_db
-CHROMA_COLLECTION_NAME=arxiv_aerodynamics
+CHROMA_COLLECTION_NAME=aero_literature
 
 # 3. Initialize database
 python scripts/ingest_documents.py  # One-time: ingests 248 papers (~10-15 min)
@@ -71,7 +71,7 @@ npm run dev
 GET    /api/v1/concepts              # List concepts (paginated, filterable)
 GET    /api/v1/concepts/{id}         # Get single concept
 POST   /api/v1/concepts              # Create concept
-PATCH  /api/v1/concepts/{id}         # Update concept
+PUT    /api/v1/concepts/{id}         # Update concept
 DELETE /api/v1/concepts/{id}         # Delete concept
 
 # Evaluations

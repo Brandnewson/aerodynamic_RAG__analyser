@@ -43,7 +43,7 @@ class ErrorBoundary extends React.Component {
             <div className="flex items-center gap-4 mb-6">
               <AlertTriangle className="w-12 h-12 text-red-400" />
               <div>
-                <h1 className="text-2xl font-display font-bold text-cockpit-text mb-2">
+                <h1 className="text-2xl font-display font-bold text-cockpit-text-primary mb-2">
                   Something Went Wrong
                 </h1>
                 <p className="text-cockpit-text-secondary">
@@ -59,7 +59,7 @@ class ErrorBoundary extends React.Component {
                 </p>
                 {this.state.errorInfo && (
                   <details className="text-cockpit-text-secondary text-xs font-mono">
-                    <summary className="cursor-pointer hover:text-cockpit-text">
+                    <summary className="cursor-pointer hover:text-cockpit-text-primary">
                       Stack Trace
                     </summary>
                     <pre className="mt-2 overflow-auto max-h-64 whitespace-pre-wrap">
@@ -73,14 +73,14 @@ class ErrorBoundary extends React.Component {
             <div className="flex gap-4">
               <button
                 onClick={this.handleReset}
-                className="flex items-center gap-2 px-6 py-3 bg-cockpit-primary hover:bg-cockpit-primary-dark transition-colors rounded font-semibold text-black"
+                className="flex items-center gap-2 px-6 py-3 bg-cockpit-primary hover:bg-cockpit-primary/90 transition-colors rounded font-semibold text-black"
               >
                 <RefreshCw className="w-4 h-4" />
                 Try Again
               </button>
               <button
                 onClick={() => window.location.href = '/'}
-                className="px-6 py-3 border-2 border-cockpit-border hover:border-cockpit-primary transition-colors rounded font-semibold text-cockpit-text"
+                className="px-6 py-3 border-2 border-cockpit-border hover:border-cockpit-primary transition-colors rounded font-semibold text-cockpit-text-primary"
               >
                 Go to Dashboard
               </button>

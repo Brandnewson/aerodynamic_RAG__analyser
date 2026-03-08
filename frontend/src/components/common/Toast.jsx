@@ -53,12 +53,12 @@ export default function Toast({ message, type = 'info', duration = 4000, onClose
             <div className="flex-shrink-0 mt-0.5">
               {icons[type]}
             </div>
-            <div className="flex-1 text-sm text-cockpit-text">
+            <div className="flex-1 text-sm text-cockpit-text-primary">
               {message}
             </div>
             <button
               onClick={handleClose}
-              className="flex-shrink-0 text-cockpit-text-secondary hover:text-cockpit-text transition-colors"
+              className="flex-shrink-0 text-cockpit-text-secondary hover:text-cockpit-text-primary transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
