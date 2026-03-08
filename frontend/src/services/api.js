@@ -5,10 +5,12 @@
  * with the backend is centralized here. Components never call fetch directly.
  */
 
+import { ApiError, isNetworkError } from '../utils/errors';
+
 const API_BASE = '/api/v1';
 
 /**
- * Generic fetch wrapper with error handling
+ * Generic fetch wrapper with enhanced error handling
  */
 async function apiCall(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
@@ -25,10 +27,23 @@ async function apiCall(endpoint, options = {}) {
     const response = await fetch(url, config);
     
     if (!response.ok) {
-      const error = await response.json().catch(() => ({
-        detail: `HTTP ${response.status}: ${response.statusText}`,
-      }));
-      throw new Error(error.detail || 'Request failed');
+      // Parse error response
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = {
+          detail: `HTTP ${response.status}: ${response.statusText}`,
+          code: 'HTTP_ERROR',
+        };
+      }
+      
+      // Throw structured ApiError
+      throw new ApiError(
+        response.status,
+        errorData,
+        errorData.detail || errorData.message
+      );
     }
 
     // Handle 204 No Content
@@ -39,7 +54,25 @@ async function apiCall(endpoint, options = {}) {
     return await response.json();
   } catch (error) {
     console.error(`API Error [${endpoint}]:`, error);
-    throw error;
+    
+    // If it's already an ApiError, re-throw it
+    if (error instanceof ApiError) {
+      throw error;
+    }
+    
+    // Handle network errors
+    if (isNetworkError(error)) {
+      throw new ApiError(0, {
+        code: 'NETWORK_ERROR',
+        detail: 'Network connection failed. Please check your internet connection.',
+      });
+    }
+    
+    // Handle other errors
+    throw new ApiError(0, {
+      code: 'UNKNOWN_ERROR',
+      detail: error.message || 'An unexpected error occurred',
+    });
   }
 }
 

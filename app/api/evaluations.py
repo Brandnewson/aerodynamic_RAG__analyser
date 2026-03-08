@@ -10,6 +10,11 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import (
+    ConceptNotFoundError,
+    EvaluationExistsError,
+    EvaluationNotFoundError,
+)
 from app.domain.schemas import ErrorResponse, EvaluationResponse
 from app.infrastructure.database import get_db
 from app.services import concept_service
@@ -48,19 +53,10 @@ def evaluate_concept(
     """
     concept = concept_service.get_concept_by_id(db, concept_id)
     if concept is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Concept with id={concept_id} was not found.",
-        )
+        raise ConceptNotFoundError(concept_id)
 
     if concept.evaluation is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=(
-                f"Concept id={concept_id} already has an evaluation. "
-                "Delete the concept and resubmit to re-evaluate."
-            ),
-        )
+        raise EvaluationExistsError(concept_id)
 
     evaluation = rag_service.evaluate_concept(db, concept)
     
@@ -104,19 +100,10 @@ def get_evaluation(
     """Retrieve stored evaluation and re-fetch retrieved context from ChromaDB."""
     concept = concept_service.get_concept_by_id(db, concept_id)
     if concept is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Concept with id={concept_id} was not found.",
-        )
+        raise ConceptNotFoundError(concept_id)
 
     if concept.evaluation is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=(
-                f"Concept id={concept_id} has not been evaluated yet. "
-                "POST /concepts/{id}/evaluate to trigger evaluation."
-            ),
-        )
+        raise EvaluationNotFoundError(concept_id)
 
     eval_model = concept.evaluation
     

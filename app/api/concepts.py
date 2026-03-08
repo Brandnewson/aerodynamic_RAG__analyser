@@ -13,6 +13,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.core.exceptions import ConceptNotFoundError
 from app.domain.schemas import (
     ConceptCreate,
     ConceptListResponse,
@@ -102,10 +103,7 @@ def get_concept(
 ) -> ConceptResponse:
     concept = concept_service.get_concept_by_id(db, concept_id)
     if concept is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Concept with id={concept_id} was not found.",
-        )
+        raise ConceptNotFoundError(concept_id)
     return concept  # type: ignore[return-value]
 
 
@@ -132,10 +130,7 @@ def update_concept(
     """Partially update a concept.  Only provided fields are written."""
     concept = concept_service.get_concept_by_id(db, concept_id)
     if concept is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Concept with id={concept_id} was not found.",
-        )
+        raise ConceptNotFoundError(concept_id)
     updated = concept_service.update_concept(db, concept, payload)
     return updated  # type: ignore[return-value]
 
@@ -160,8 +155,5 @@ def delete_concept(
     """Permanently delete a concept and its evaluation (if any)."""
     concept = concept_service.get_concept_by_id(db, concept_id)
     if concept is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Concept with id={concept_id} was not found.",
-        )
+        raise ConceptNotFoundError(concept_id)
     concept_service.delete_concept(db, concept)

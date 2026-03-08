@@ -16,10 +16,23 @@ from typing import AsyncGenerator
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 
 from app.api import concepts as concepts_router
 from app.api import evaluations as evaluations_router
 from app.core.config import settings
+from app.core.exceptions import (
+    AeroInsightError,
+    ConceptNotFoundError,
+    EvaluationExistsError,
+    EvaluationNotFoundError,
+    ValidationError,
+    VectorStoreError,
+    LLMServiceError,
+    DatabaseError,
+    RateLimitError,
+    ServiceUnavailableError,
+)
 from app.infrastructure.database import init_db
 
 
@@ -139,6 +152,139 @@ def create_app() -> FastAPI:
                 "get_evaluation",
             ],
         }
+
+    # ------------------------------------------------------------------
+    # Custom exception handlers
+    # ------------------------------------------------------------------
+    @app.exception_handler(ConceptNotFoundError)
+    async def concept_not_found_handler(
+        request: Request, exc: ConceptNotFoundError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "detail": exc.message,
+                "code": "CONCEPT_NOT_FOUND",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(EvaluationExistsError)
+    async def evaluation_exists_handler(
+        request: Request, exc: EvaluationExistsError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={
+                "detail": exc.message,
+                "code": "EVALUATION_EXISTS",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(EvaluationNotFoundError)
+    async def evaluation_not_found_handler(
+        request: Request, exc: EvaluationNotFoundError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "detail": exc.message,
+                "code": "EVALUATION_NOT_FOUND",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(ValidationError)
+    async def validation_error_handler(
+        request: Request, exc: ValidationError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={
+                "detail": exc.message,
+                "code": "VALIDATION_ERROR",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(VectorStoreError)
+    async def vector_store_error_handler(
+        request: Request, exc: VectorStoreError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "detail": exc.message,
+                "code": "VECTOR_STORE_ERROR",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(LLMServiceError)
+    async def llm_service_error_handler(
+        request: Request, exc: LLMServiceError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "detail": exc.message,
+                "code": "LLM_SERVICE_ERROR",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(DatabaseError)
+    async def database_error_handler(
+        request: Request, exc: DatabaseError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "detail": exc.message,
+                "code": "DATABASE_ERROR",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(OperationalError)
+    async def sqlalchemy_operational_error_handler(
+        request: Request, exc: OperationalError
+    ) -> JSONResponse:
+        """Handle SQLAlchemy OperationalError (connection failures, etc.)."""
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "detail": str(exc),
+                "code": "DATABASE_OPERATIONAL_ERROR",
+            },
+        )
+
+    @app.exception_handler(RateLimitError)
+    async def rate_limit_error_handler(
+        request: Request, exc: RateLimitError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={
+                "detail": exc.message,
+                "code": "RATE_LIMIT_EXCEEDED",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(ServiceUnavailableError)
+    async def service_unavailable_handler(
+        request: Request, exc: ServiceUnavailableError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "detail": exc.message,
+                "code": "SERVICE_UNAVAILABLE",
+                **exc.details,
+            },
+        )
 
     # ------------------------------------------------------------------
     # Global exception handler — catches unhandled 500s and returns JSON
