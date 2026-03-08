@@ -4,6 +4,16 @@ Generate PDF API documentation from markdown using xhtml2pdf (Windows-friendly).
 import sys
 from pathlib import Path
 
+try:
+    import markdown
+    from xhtml2pdf import pisa
+except ImportError as e:
+    print(
+        f"❌ Missing dependency: {e}\n"
+        "Install the docs extras with: uv sync --group docs"
+    )
+    sys.exit(1)
+
 def generate_pdf(markdown_path: Path, output_path: Path):
     """Convert markdown to PDF with styling using xhtml2pdf."""
     
@@ -138,7 +148,6 @@ def generate_pdf(markdown_path: Path, output_path: Path):
         markdown_content = f.read()
     
     # Convert markdown to HTML with Python markdown library
-    import markdown
     from markdown.extensions.tables import TableExtension
     from markdown.extensions.fenced_code import FencedCodeExtension
     
@@ -168,8 +177,6 @@ def generate_pdf(markdown_path: Path, output_path: Path):
     """
     
     # Generate PDF using xhtml2pdf
-    from xhtml2pdf import pisa
-    
     with open(output_path, 'wb') as pdf_file:
         pisa_status = pisa.CreatePDF(full_html, dest=pdf_file)
     

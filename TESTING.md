@@ -67,7 +67,7 @@ All API errors return consistent JSON:
 ```json
 {
   "detail": "Concept with id 123 not found",
-  "code": "concept_not_found",
+  "code": "CONCEPT_NOT_FOUND",
   "concept_id": 123
 }
 ```
@@ -143,7 +143,7 @@ try {
 def test_nonexistent_concept_returns_404(client: TestClient):
     response = client.get("/api/v1/concepts/9999")
     assert response.status_code == 404
-    assert response.json()["code"] == "concept_not_found"
+    assert response.json()["code"] == "CONCEPT_NOT_FOUND"
 ```
 
 ### 2. Database Transaction Tests (`tests/test_database_errors.py`)

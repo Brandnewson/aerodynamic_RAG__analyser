@@ -105,14 +105,17 @@ def create_app() -> FastAPI:
         }
         
         # Check SQLite database
+        db = None
         try:
             db = SessionLocal()
             db.execute(text("SELECT 1"))
-            db.close()
             diagnostics["components"]["database"] = "healthy"
         except Exception as e:
             diagnostics["components"]["database"] = f"error: {str(e)}"
             diagnostics["status"] = "degraded"
+        finally:
+            if db is not None:
+                db.close()
         
         # Check ChromaDB
         try:
@@ -299,15 +302,18 @@ def create_app() -> FastAPI:
         logger = logging.getLogger(__name__)
         logger.error(f"Unhandled exception: {exc}")
         logger.error(traceback.format_exc())
-        
+
+        content: dict = {
+            "detail": "An unexpected error occurred.",
+            "code": "INTERNAL_ERROR",
+        }
+        if settings.DEBUG:
+            content["error"] = str(exc)
+            content["type"] = type(exc).__name__
+
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "detail": "An unexpected error occurred.",
-                "code": "INTERNAL_ERROR",
-                "error": str(exc),  # Include actual error in development
-                "type": type(exc).__name__
-            },
+            content=content,
         )
 
     return app

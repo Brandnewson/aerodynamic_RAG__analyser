@@ -13,7 +13,7 @@ export default function ErrorDisplay({ error, onRetry, onDismiss, className = ''
       <div className="flex items-start gap-4">
         <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0 mt-0.5" />
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-cockpit-text mb-2">
+          <h3 className="text-lg font-semibold text-cockpit-text-primary mb-2">
             {formattedError.title}
           </h3>
           <p className="text-cockpit-text-secondary mb-4">
@@ -30,7 +30,7 @@ export default function ErrorDisplay({ error, onRetry, onDismiss, className = ''
             {onRetry && (
               <button
                 onClick={onRetry}
-                className="flex items-center gap-2 px-4 py-2 bg-cockpit-primary hover:bg-cockpit-primary-dark transition-colors rounded font-semibold text-black text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-cockpit-primary hover:bg-cockpit-primary/90 transition-colors rounded font-semibold text-black text-sm"
               >
                 <RefreshCw className="w-4 h-4" />
                 Retry
@@ -39,7 +39,7 @@ export default function ErrorDisplay({ error, onRetry, onDismiss, className = ''
             {onDismiss && (
               <button
                 onClick={onDismiss}
-                className="px-4 py-2 border border-cockpit-border hover:border-cockpit-primary transition-colors rounded font-semibold text-cockpit-text text-sm"
+                className="px-4 py-2 border border-cockpit-border hover:border-cockpit-primary transition-colors rounded font-semibold text-cockpit-text-primary text-sm"
               >
                 Dismiss
               </button>
@@ -84,7 +84,7 @@ export function EmptyState({
         <Icon className="w-16 h-16 text-cockpit-text-muted mb-4" />
       )}
       
-      <h3 className="text-xl font-semibold text-cockpit-text mb-2">
+      <h3 className="text-xl font-semibold text-cockpit-text-primary mb-2">
         {title}
       </h3>
       
@@ -95,7 +95,7 @@ export function EmptyState({
       {action && actionLabel && (
         <button
           onClick={action}
-          className="px-6 py-3 bg-cockpit-primary hover:bg-cockpit-primary-dark transition-colors rounded font-semibold text-black"
+          className="px-6 py-3 bg-cockpit-primary hover:bg-cockpit-primary/90 transition-colors rounded font-semibold text-black"
         >
           {actionLabel}
         </button>
@@ -111,10 +111,10 @@ export function LoadingError({ message, onRetry }) {
   return (
     <div className="flex flex-col items-center justify-center py-12">
       <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-      <p className="text-cockpit-text mb-4">{message || 'Failed to load data'}</p>
+      <p className="text-cockpit-text-primary mb-4">{message || 'Failed to load data'}</p>
       <button
         onClick={onRetry}
-        className="flex items-center gap-2 px-4 py-2 bg-cockpit-primary hover:bg-cockpit-primary-dark transition-colors rounded font-semibold text-black"
+        className="flex items-center gap-2 px-4 py-2 bg-cockpit-primary hover:bg-cockpit-primary/90 transition-colors rounded font-semibold text-black"
       >
         <RefreshCw className="w-4 h-4" />
         Retry

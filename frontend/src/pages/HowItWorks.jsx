@@ -1,6 +1,25 @@
 import { motion } from 'framer-motion';
 import { Info, Database, Brain, Search, FileText, Zap, ArrowRight } from 'lucide-react';
 
+// Static class maps required so Tailwind includes these classes in the production build
+const colorClasses = {
+  'cockpit-secondary': {
+    bg: 'bg-cockpit-secondary/20',
+    border: 'border-2 border-cockpit-secondary',
+    text: 'text-cockpit-secondary',
+  },
+  'cockpit-primary': {
+    bg: 'bg-cockpit-primary/20',
+    border: 'border-2 border-cockpit-primary',
+    text: 'text-cockpit-primary',
+  },
+  'cockpit-success': {
+    bg: 'bg-cockpit-success/20',
+    border: 'border-2 border-cockpit-success',
+    text: 'text-cockpit-success',
+  },
+};
+
 export default function HowItWorks() {
   const pipeline = [
     {
@@ -97,15 +116,15 @@ export default function HowItWorks() {
               <div className="panel hover:border-cockpit-primary/50 transition-all duration-300">
                 <div className="p-6 flex items-start gap-6">
                   {/* Step Number */}
-                  <div className={`flex-shrink-0 w-16 h-16 rounded-full bg-${item.color}/20 border-2 border-${item.color} flex items-center justify-center`}>
-                    <span className={`text-2xl font-display font-bold text-${item.color}`}>
+                  <div className={`flex-shrink-0 w-16 h-16 rounded-full ${colorClasses[item.color].bg} ${colorClasses[item.color].border} flex items-center justify-center`}>
+                    <span className={`text-2xl font-display font-bold ${colorClasses[item.color].text}`}>
                       {item.step}
                     </span>
                   </div>
 
                   {/* Icon */}
                   <div className="flex-shrink-0">
-                    <item.icon className={`w-8 h-8 text-${item.color}`} />
+                    <item.icon className={`w-8 h-8 ${colorClasses[item.color].text}`} />
                   </div>
 
                   {/* Content */}
