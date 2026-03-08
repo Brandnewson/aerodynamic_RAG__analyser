@@ -40,12 +40,12 @@ uv pip install -r requirements.txt
 # 2. Configure environment
 # Create .env file with:
 OPENAI_API_KEY=sk-proj-your-key-here
-DATABASE_URL=sqlite:///./aeroinsight.db
-CHROMA_PERSIST_DIR=./chroma_storage
+DATABASE_URL=sqlite:///./database.db
+CHROMA_PERSIST_DIR=./chroma_db
 CHROMA_COLLECTION_NAME=arxiv_aerodynamics
 
 # 3. Initialize database
-python scripts/ingest_data.py  # One-time: ingests 248 papers (~10-15 min)
+python scripts/ingest_documents.py  # One-time: ingests 248 papers (~10-15 min)
 
 # 4. Start backend
 python -m uvicorn app.main:app --reload --port 8001
@@ -112,8 +112,8 @@ rm aeroinsight.db
 python -c "from app.core.database import engine, Base; Base.metadata.create_all(engine)"
 
 # Reset vector store (requires re-ingestion)
-rm -rf chroma_storage/
-python scripts/ingest_data.py
+rm -rf chroma_db/
+python scripts/ingest_documents.py
 ```
 
 ### API Testing
@@ -139,7 +139,7 @@ curl -X POST http://localhost:8001/api/v1/concepts/{id}/evaluate
 |---------|----------|
 | `uvicorn: command not found` | Activate venv: `.venv\Scripts\Activate.ps1` |
 | `OpenAI API key not found` | Check `.env` file exists with valid key |
-| `ChromaDB collection not found` | Run `python scripts/ingest_data.py` |
+| `ChromaDB collection not found` | Run `python scripts/ingest_documents.py` |
 | `Port 8001 already in use` | Kill process or use different port: `--port 8002` |
 | `npm: command not found` | Install Node.js 20+ |
 | API calls returning CORS errors | Check Vite proxy config in `frontend/vite.config.js` |

@@ -341,7 +341,10 @@ aerodynamic_RAG__analyser/
 │   └── tailwind.config.js        # Tailwind theme
 │
 ├── scripts/                      # Utility scripts
-│   └── ingest_data.py            # Initial data ingestion
+│   ├── fetch_papers.py           # Fetch arXiv papers
+│   ├── ingest_documents.py       # Initial data ingestion
+│   ├── verify_retrieval.py       # Test retrieval quality
+│   └── demo_mcp_flow.py          # MCP workflow demo
 │
 ├── tests/                        # Test suites
 │   ├── test_api_errors.py        # API error tests (16)
