@@ -28,14 +28,9 @@ Submit aerodynamic concepts → Get AI evaluations backed by real research paper
 # 1. Clone and setup Python environment
 git clone <repository-url>
 cd aerodynamic_RAG__analyser
-python -m venv .venv
-
-# Windows:
-.venv\Scripts\Activate.ps1
-# Linux/Mac:
-source .venv/bin/activate
-
 uv sync
+# Optional: drop into the project virtualenv shell
+# uv shell
 
 # 2. Configure environment
 # Create .env file with:
@@ -45,10 +40,11 @@ CHROMA_PERSIST_DIR=./chroma_db
 CHROMA_COLLECTION_NAME=aero_literature
 
 # 3. Initialize database
-python scripts/ingest_documents.py  # One-time: ingests 248 papers (~10-15 min)
+uv run python scripts/fetch_papers.py       # One-time: grabs papers from arxiv
+uv run python scripts/ingest_documents.py  # One-time: ingests 248 papers (~10-15 min)
 
 # 4. Start backend
-python -m uvicorn app.main:app --reload --port 8001
+uv run uvicorn app.main:app --reload --port 8001
 # Running at http://localhost:8001
 
 # 5. Start frontend (new terminal)
@@ -59,6 +55,8 @@ npm run dev
 ```
 
 **Verify**: Open http://localhost:3000 and create a concept.
+
+Note: if you do not run `uv shell`, prefix Python commands with `uv run` so they always execute inside the uv-managed virtual environment.
 
 ---
 
@@ -110,11 +108,11 @@ See [TESTING.md](TESTING.md) for comprehensive test documentation.
 ```bash
 # Reset database (deletes all data)
 rm aeroinsight.db
-python -c "from app.core.database import engine, Base; Base.metadata.create_all(engine)"
+uv run python -c "from app.core.database import engine, Base; Base.metadata.create_all(engine)"
 
 # Reset vector store (requires re-ingestion)
 rm -rf chroma_db/
-python scripts/ingest_documents.py
+uv run python scripts/ingest_documents.py
 ```
 
 ### API Testing
@@ -138,9 +136,9 @@ curl -X POST http://localhost:8001/api/v1/concepts/{id}/evaluate
 
 | Problem | Solution |
 |---------|----------|
-| `uvicorn: command not found` | Activate venv: `.venv\Scripts\Activate.ps1` |
+| `uvicorn: command not found` | Run with uv-managed env: `uv run uvicorn app.main:app --reload --port 8001` (or run `uv shell` first) |
 | `OpenAI API key not found` | Check `.env` file exists with valid key |
-| `ChromaDB collection not found` | Run `python scripts/ingest_documents.py` |
+| `ChromaDB collection not found` | Run `uv run python scripts/ingest_documents.py` |
 | `Port 8001 already in use` | Kill process or use different port: `--port 8002` |
 | `npm: command not found` | Install Node.js 20+ |
 | API calls returning CORS errors | Check Vite proxy config in `frontend/vite.config.js` |
