@@ -17,6 +17,7 @@ from sqlalchemy.pool import StaticPool
 from sqlalchemy.exc import IntegrityError, OperationalError
 from unittest.mock import patch, MagicMock
 
+from tests.auth_helpers import authenticate_client
 from app.infrastructure.database import Base, get_db
 from app.main import app
 from app.domain.models import AeroConcept, ConceptEvaluation, ConceptStatus
@@ -55,9 +56,13 @@ def _override_get_db():
 @pytest.fixture()
 def client():
     """Provide a TestClient backed by an isolated in-memory SQLite database."""
+    from app.domain import models  # noqa: F401 — register ORM models with Base
+
     Base.metadata.create_all(bind=test_engine)
     app.dependency_overrides[get_db] = _override_get_db
-    yield TestClient(app)
+    with TestClient(app) as c:
+        authenticate_client(c)
+        yield c
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=test_engine)
 

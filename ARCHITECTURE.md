@@ -225,6 +225,16 @@ db.commit()
 │ created_at                  │
 │ updated_at                  │
 └─────────────────────────────┘
+
+┌─────────────────────────────┐
+│            User             │
+├─────────────────────────────┤
+│ id (PK)                     │
+│ username (UNIQUE)           │
+│ password_hash               │
+│ created_at                  │
+│ updated_at                  │
+└─────────────────────────────┘
 ```
 
 ### Key Constraints
@@ -370,17 +380,21 @@ For development and small deployments:
 aerodynamic_RAG__analyser/
 ├── app/                          # Backend FastAPI application
 │   ├── api/                      # API route handlers
+│   │   ├── auth.py               # Register, login, profile endpoints
 │   │   ├── concepts.py           # Concept CRUD endpoints
 │   │   ├── evaluations.py        # Evaluation endpoints
 │   │   └── reports.py            # Report upload/CRUD endpoints
 │   ├── core/                     # Core configurations
 │   │   ├── config.py             # Environment variables
 │   │   ├── database.py           # SQLAlchemy setup
-│   │   └── exceptions.py         # Custom exceptions
+│   │   ├── exceptions.py         # Custom exceptions
+│   │   └── security.py           # JWT generation, validation, dependencies
 │   ├── domain/                   # Domain models
 │   │   ├── models.py             # SQLAlchemy ORM models
 │   │   └── schemas.py            # Pydantic schemas
 │   ├── services/                 # Business logic
+│   │   ├── auth_service.py       # User registration and authentication
+│   │   ├── concept_service.py    # Concept CRUD logic
 │   │   ├── rag_service.py        # RAG pipeline
 │   │   └── report_service.py     # PDF extraction + report indexing
 │   └── main.py                   # FastAPI app + exception handlers
@@ -409,11 +423,14 @@ aerodynamic_RAG__analyser/
 │   └── demo_mcp_flow.py          # MCP workflow demo
 │
 ├── tests/                        # Test suites
-│   ├── test_api_errors.py        # API error tests (16)
-│   ├── test_concepts.py          # CRUD tests (13)
-│   ├── test_database_errors.py   # DB transaction tests (13)
-│   ├── test_e2e.py               # End-to-end tests (8)
-│   └── test_reports.py           # Report endpoint tests (5)
+│   ├── auth_helpers.py           # Shared JWT auth helper for test clients
+│   ├── test_api_errors.py        # API error handling tests
+│   ├── test_auth.py              # Authentication endpoint tests
+│   ├── test_concepts.py          # Concept CRUD tests
+│   ├── test_database_errors.py   # DB transaction and constraint tests
+│   ├── test_e2e.py               # End-to-end workflow tests
+│   ├── test_fixtures.py          # Shared mock data builders
+│   └── test_reports.py           # Report endpoint tests
 │
 ├── chroma_storage/               # ChromaDB persistence
 ├── .env                          # Environment variables
@@ -453,6 +470,14 @@ aerodynamic_RAG__analyser/
 | GET | `/api/v1/reports/{id}` | Get report details and extracted text |
 | PUT | `/api/v1/reports/{id}` | Update report metadata/content (reindex on content/title changes) |
 | DELETE | `/api/v1/reports/{id}` | Delete report and indexed vectors |
+
+### Authentication
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/auth/register` | Create a new user account |
+| POST | `/api/v1/auth/login` | Authenticate and receive JWT token |
+| GET | `/api/v1/auth/me` | Get current user profile (requires token) |
 
 ### Health & Discovery
 
@@ -572,18 +597,28 @@ CREATE INDEX idx_concepts_created ON concepts(created_at DESC);
 
 ### API Security
 
-- Environment variable validation on startup
-- Input validation via Pydantic schemas
-- SQL injection protection via SQLAlchemy ORM
-- CORS configuration for frontend domain
+- **JWT Authentication**: Stateless token-based auth on all protected endpoints
+- **Password Hashing**: bcrypt hashing via `passlib` (no plaintext passwords stored)
+- **Token Expiry**: Configurable expiration window via `ACCESS_TOKEN_EXPIRE_MINUTES`
+- **Input Validation**: Pydantic schemas validate all request bodies
+- **SQL Injection Protection**: SQLAlchemy ORM parameterises all queries
+- **CORS**: Configured for frontend origin only
+- **Environment Secrets**: API keys and JWT secret loaded from `.env`, validated on startup
+
+### Authentication Flow
+
+```
+POST /api/v1/auth/register  →  hash password  →  store User  →  201
+POST /api/v1/auth/login     →  verify hash    →  issue JWT   →  200 + token
+GET  /api/v1/concepts       →  validate JWT   →  get_current_user dep → 200
+```
 
 ### Deployment Recommendations
 
 1. **HTTPS**: Use TLS certificates in production
-2. **API Keys**: Rotate OpenAI keys regularly
+2. **API Keys**: Rotate OpenAI keys and JWT secret regularly
 3. **Rate Limiting**: Add rate limiting middleware
-4. **Authentication**: Add JWT authentication for multi-user
-5. **Input Sanitization**: Already handled by Pydantic
+4. **Input Sanitization**: Already handled by Pydantic
 
 ---
 

@@ -93,6 +93,25 @@ GET    /api/v1/mcp                   # MCP tool discovery
 **Full Documentation**: [API_DOCUMENTATION.pdf](docs/API_DOCUMENTATION.pdf) (includes examples, error codes, authentication)  
 **Interactive Docs**: http://localhost:8001/docs
 
+### Authentication
+
+All API endpoints (except `/auth/register` and `/auth/login`) require a JWT Bearer token.
+
+```bash
+# 1. Register a user
+curl -X POST http://localhost:8001/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"username": "myuser", "password": "mypassword"}'
+
+# 2. Login and capture the token
+TOKEN=$(curl -s -X POST http://localhost:8001/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username": "myuser", "password": "mypassword"}' | python -c "import sys,json; print(json.load(sys.stdin)['access_token'])")
+
+# 3. Use the token in subsequent requests
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8001/api/v1/concepts
+```
+
 ---
 
 ## Development
