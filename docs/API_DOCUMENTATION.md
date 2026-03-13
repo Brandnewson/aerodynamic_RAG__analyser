@@ -28,7 +28,7 @@ AeroInsight is a REST-based AI-augmented aerodynamic concept evaluation platform
 ### Key Features
 
 - **Concept Management**: Create, update, list, and delete aerodynamic concepts
-- **Report Management**: Upload, list, update, retrieve, and delete PDF reports indexed in ChromaDB
+- **Report Management**: Upload, list, search indexed vectors, update, retrieve, and delete PDF reports
 - **RAG Evaluation**: AI-powered concept evaluation using GPT-4o and 31,652 chunks from 248 arXiv papers
 - **Citation Tracking**: Every evaluation includes citations from retrieved research papers
 - **MCP Integration**: Model Context Protocol support for agent-native workflows
@@ -583,6 +583,51 @@ List reports with pagination.
 
 ---
 
+#### GET /reports/index
+
+Read report-level index status directly from vector-store chunks. This endpoint is useful when you want to inspect what is actually present in ChromaDB.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Constraints | Description |
+|-----------|------|----------|---------|-------------|-------------|
+| `query` | string | ❌ | - | min length 1 | Free-text search over metadata and chunk content |
+| `page` | integer | ❌ | 1 | >= 1 | Page number (1-based) |
+| `page_size` | integer | ❌ | 20 | 1-100 | Items per page |
+
+**Response:** `200 OK`
+
+```json
+{
+  "items": [
+    {
+      "report_id": 12,
+      "title": "Wind Tunnel Run 27",
+      "source_filename": "run27.pdf",
+      "author": "Aero Team",
+      "tags": ["wind-tunnel", "validation"],
+      "indexed_chunk_count": 14,
+      "matched_chunk_count": 4,
+      "sample_chunk": "Measured wake stability at yaw angles..."
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "page_size": 20,
+  "query": "wake"
+}
+```
+
+**Example Request:**
+```bash
+curl "http://localhost:8001/api/v1/reports/index?query=wake&page=1&page_size=20"
+```
+
+**Possible Errors:**
+- `503` - Vector store unavailable during index read
+
+---
+
 #### GET /reports/{id}
 
 Retrieve full details for a single report.
@@ -721,6 +766,23 @@ Detailed response model for a single report.
 | `chunk_count` | integer | Number of indexed chunks |
 | `created_at` | datetime | Creation timestamp |
 | `updated_at` | datetime | Last update timestamp |
+
+---
+
+### ReportVectorIndexSummaryResponse
+
+Vector-store read model aggregated per report.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `report_id` | integer | Report identifier derived from vector metadata |
+| `title` | string | Report title |
+| `source_filename` | string | Original filename |
+| `author` | string \| null | Optional author |
+| `tags` | array[string] | Report tags |
+| `indexed_chunk_count` | integer | Total chunks indexed for this report |
+| `matched_chunk_count` | integer | Chunks matching the `query` filter |
+| `sample_chunk` | string \| null | First matched chunk preview |
 
 ---
 

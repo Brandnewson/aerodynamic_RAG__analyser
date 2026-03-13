@@ -41,6 +41,38 @@ export default function Documentation() {
       path: '/api/v1/concepts/{id}/evaluation',
       description: 'Get evaluation result',
     },
+    {
+      method: 'POST',
+      path: '/api/v1/reports',
+      description: 'Upload and create a report from PDF (indexes chunks in ChromaDB)',
+    },
+    {
+      method: 'GET',
+      path: '/api/v1/reports',
+      description: 'List persisted reports (SQLite-backed)',
+      params: 'page, page_size',
+    },
+    {
+      method: 'GET',
+      path: '/api/v1/reports/index',
+      description: 'Read indexed reports directly from vector-store metadata/content',
+      params: 'query, page, page_size',
+    },
+    {
+      method: 'GET',
+      path: '/api/v1/reports/{id}',
+      description: 'Get a single report with extracted content',
+    },
+    {
+      method: 'PUT',
+      path: '/api/v1/reports/{id}',
+      description: 'Update report metadata/content and re-index vectors when needed',
+    },
+    {
+      method: 'DELETE',
+      path: '/api/v1/reports/{id}',
+      description: 'Delete report and remove vectors from ChromaDB',
+    },
   ];
 
   const methodColors = {

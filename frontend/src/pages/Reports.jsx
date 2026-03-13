@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, RefreshCw, FolderOpen } from 'lucide-react';
+import { Plus, RefreshCw, FolderOpen, Search } from 'lucide-react';
 
 import { reportsApi } from '../services/api';
 import ReportCard from '../components/reports/ReportCard';
@@ -13,6 +13,9 @@ export default function Reports() {
   const [editingReport, setEditingReport] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [indexQuery, setIndexQuery] = useState('');
+  const [indexResults, setIndexResults] = useState([]);
+  const [isIndexLoading, setIsIndexLoading] = useState(false);
 
   const loadReports = async () => {
     setIsLoading(true);
@@ -36,8 +39,21 @@ export default function Reports() {
     }
   };
 
+  const loadVectorIndex = async (query = '') => {
+    setIsIndexLoading(true);
+    try {
+      const response = await reportsApi.listIndexed({ query, pageSize: 100 });
+      setIndexResults(response.items || []);
+    } catch (error) {
+      alert(`Failed to read vector index: ${error.message}`);
+    } finally {
+      setIsIndexLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadReports();
+    loadVectorIndex('');
   }, []);
 
   const handleCreate = () => {
@@ -120,6 +136,82 @@ export default function Reports() {
                 <Plus className="w-4 h-4" />
                 Upload Report
               </button>
+            </div>
+          </div>
+
+          <div className="panel mb-8">
+            <div className="panel-header flex items-center justify-between gap-4">
+              <div>
+                <h3 className="text-lg font-display font-bold text-cockpit-secondary uppercase tracking-wide">
+                  Vector Index Read Path
+                </h3>
+                <p className="text-xs text-cockpit-text-muted font-mono mt-1">
+                  Query indexed chunk metadata/content directly from ChromaDB.
+                </p>
+              </div>
+            </div>
+            <div className="p-6 flex flex-col md:flex-row gap-3 md:items-center">
+              <input
+                type="text"
+                className="input flex-1"
+                placeholder="Search by title, file, tags, author, or chunk text"
+                value={indexQuery}
+                onChange={(e) => setIndexQuery(e.target.value)}
+              />
+              <button
+                onClick={() => loadVectorIndex(indexQuery)}
+                className="btn-secondary flex items-center justify-center gap-2"
+                disabled={isIndexLoading}
+              >
+                <Search className="w-4 h-4" />
+                {isIndexLoading ? 'Reading...' : 'Read Index'}
+              </button>
+              <button
+                onClick={() => {
+                  setIndexQuery('');
+                  loadVectorIndex('');
+                }}
+                className="btn-outline"
+                disabled={isIndexLoading}
+              >
+                Clear
+              </button>
+            </div>
+
+            <div className="px-6 pb-6">
+              {isIndexLoading ? (
+                <p className="text-sm text-cockpit-text-muted font-mono">Loading vector index...</p>
+              ) : indexResults.length === 0 ? (
+                <p className="text-sm text-cockpit-text-muted font-mono">No indexed report matches found.</p>
+              ) : (
+                <div className="grid gap-3">
+                  {indexResults.map((item) => (
+                    <div key={item.report_id} className="bg-cockpit-bg border border-cockpit-border rounded p-4">
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                        <div>
+                          <h4 className="text-cockpit-text-primary font-display font-semibold">{item.title}</h4>
+                          <p className="text-xs text-cockpit-text-muted font-mono">{item.source_filename}</p>
+                          <p className="text-xs text-cockpit-secondary font-mono mt-2">
+                            matched {item.matched_chunk_count} / {item.indexed_chunk_count} chunks
+                          </p>
+                          {item.sample_chunk && (
+                            <p className="text-xs text-cockpit-text-secondary mt-2 leading-relaxed">
+                              {item.sample_chunk}
+                              {item.sample_chunk.length >= 240 ? '...' : ''}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => loadReportDetail(item.report_id)}
+                          className="btn-outline whitespace-nowrap"
+                        >
+                          View Report
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

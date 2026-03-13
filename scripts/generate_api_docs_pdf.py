@@ -1,5 +1,7 @@
-"""
-Generate PDF API documentation from markdown using xhtml2pdf (Windows-friendly).
+"""Generate API PDF documentation from markdown (Windows-friendly).
+
+The generated PDF mirrors docs/API_DOCUMENTATION.md, including report CRUD
+and vector-index read-path documentation.
 """
 import sys
 from pathlib import Path

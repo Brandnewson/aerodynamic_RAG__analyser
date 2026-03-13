@@ -41,6 +41,17 @@ This document provides detailed technical information about AeroInsight's archit
 
 Reports are first-class resources with dedicated API endpoints (`/api/v1/reports`) and a synchronized vector index lifecycle.
 
+### Read Paths
+
+- `GET /api/v1/reports`: reads persisted report entities from SQLite.
+- `GET /api/v1/reports/index`: reads report-level index state directly from ChromaDB chunk metadata/content.
+
+The vector-index path aggregates chunks by `report_id` and supports free-text query over:
+- metadata (`title`, `source_filename`, `author`, `tags`)
+- chunk text content
+
+This path is exposed in the frontend Reports page as the "Vector Index Read Path" panel so users can inspect what is currently indexed, not just what is persisted.
+
 ### Upload / Create Flow
 
 1. Frontend uploads PDF via multipart form data.

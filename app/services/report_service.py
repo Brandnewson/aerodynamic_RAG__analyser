@@ -70,11 +70,14 @@ def _build_vector_ids(report_id: int, chunk_count: int) -> list[str]:
 
 
 def _build_metadatas(report: Report, chunk_count: int) -> list[dict]:
+    tags_csv = ",".join(_normalise_tags(report.tags))
     return [
         {
             "report_id": report.id,
             "title": report.title,
             "source_filename": report.source_filename,
+            "author": report.author or "",
+            "tags": tags_csv,
             "chunk_index": i,
             "source_type": "report",
         }
@@ -103,6 +106,103 @@ def list_reports(
         .all()
     )
     return items, total
+
+
+def list_indexed_reports(
+    db: Session,
+    *,
+    query: str | None = None,
+    page: int = 1,
+    page_size: int = 20,
+) -> tuple[list[dict], int]:
+    """List reports based on what is currently indexed in ChromaDB.
+
+    Results are aggregated per ``report_id`` and support optional
+    free-text filtering across metadata and chunk content.
+    """
+    normalized_query = (query or "").strip().lower()
+    page_size = min(page_size, 100)
+
+    try:
+        chunks = vector_store.list_chunks(where={"source_type": "report"})
+    except Exception as exc:  # pragma: no cover - infrastructure wrapper
+        raise VectorStoreError(
+            "Failed to read report vectors from vector store.",
+            operation="list_report_vectors",
+        ) from exc
+
+    aggregated: dict[int, dict] = {}
+    for chunk in chunks:
+        metadata = chunk.get("metadata") or {}
+        report_id_raw = metadata.get("report_id")
+        if report_id_raw is None:
+            continue
+
+        try:
+            report_id = int(report_id_raw)
+        except (TypeError, ValueError):
+            continue
+
+        title = str(metadata.get("title") or "Untitled report")
+        source_filename = str(metadata.get("source_filename") or "unknown.pdf")
+        author = str(metadata.get("author") or "").strip() or None
+        tags_raw = str(metadata.get("tags") or "")
+        tags = [tag.strip() for tag in tags_raw.split(",") if tag.strip()]
+        document = str(chunk.get("document") or "")
+
+        searchable = " ".join(
+            [
+                title,
+                source_filename,
+                author or "",
+                " ".join(tags),
+                document,
+            ]
+        ).lower()
+        matches = not normalized_query or normalized_query in searchable
+
+        if report_id not in aggregated:
+            aggregated[report_id] = {
+                "report_id": report_id,
+                "title": title,
+                "source_filename": source_filename,
+                "author": author,
+                "tags": tags,
+                "indexed_chunk_count": 0,
+                "matched_chunk_count": 0,
+                "sample_chunk": None,
+            }
+
+        record = aggregated[report_id]
+        record["indexed_chunk_count"] += 1
+        if matches:
+            record["matched_chunk_count"] += 1
+            if not record["sample_chunk"] and document:
+                record["sample_chunk"] = document[:240]
+
+    # Enrich/fix metadata using SQLite report rows when available.
+    report_ids = list(aggregated.keys())
+    if report_ids:
+        report_rows = db.query(Report).filter(Report.id.in_(report_ids)).all()
+        by_id = {item.id: item for item in report_rows}
+        for report_id, record in aggregated.items():
+            report_row = by_id.get(report_id)
+            if not report_row:
+                continue
+            record["title"] = report_row.title
+            record["source_filename"] = report_row.source_filename
+            record["author"] = report_row.author
+            record["tags"] = _normalise_tags(report_row.tags)
+
+    rows = list(aggregated.values())
+    if normalized_query:
+        rows = [row for row in rows if row["matched_chunk_count"] > 0]
+
+    rows.sort(key=lambda row: row["report_id"], reverse=True)
+    total = len(rows)
+    start = (page - 1) * page_size
+    end = start + page_size
+    return rows[start:end], total
 
 
 def create_report_from_upload(

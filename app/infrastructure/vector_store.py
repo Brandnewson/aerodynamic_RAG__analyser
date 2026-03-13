@@ -89,6 +89,45 @@ class VectorStore:
             )
         return chunks
 
+    def list_chunks(
+        self,
+        *,
+        where: dict | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> list[dict]:
+        """Return stored chunks using metadata filters.
+
+        This is used by report-management endpoints to inspect what is
+        currently indexed in ChromaDB.
+        """
+        kwargs: dict = {
+            "include": ["documents", "metadatas"],
+        }
+        if where:
+            kwargs["where"] = where
+        if limit is not None:
+            kwargs["limit"] = limit
+        if offset is not None:
+            kwargs["offset"] = offset
+
+        results = self._collection.get(**kwargs)
+
+        chunks = []
+        ids = results.get("ids", [])
+        documents = results.get("documents", [])
+        metadatas = results.get("metadatas", [])
+
+        for i, chunk_id in enumerate(ids):
+            chunks.append(
+                {
+                    "id": chunk_id,
+                    "document": documents[i] if i < len(documents) else "",
+                    "metadata": metadatas[i] if i < len(metadatas) else {},
+                }
+            )
+        return chunks
+
     # ------------------------------------------------------------------
     # Utility
     # ------------------------------------------------------------------

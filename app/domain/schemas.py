@@ -232,6 +232,29 @@ class ReportListResponse(BaseModel):
     page_size: int
 
 
+class ReportVectorIndexSummaryResponse(BaseModel):
+    """Aggregated report-level view derived from vector-store chunks."""
+
+    report_id: int
+    title: str
+    source_filename: str
+    author: str | None
+    tags: list[str]
+    indexed_chunk_count: int
+    matched_chunk_count: int
+    sample_chunk: str | None = None
+
+
+class ReportVectorIndexListResponse(BaseModel):
+    """Paginated vector-index report results."""
+
+    items: list[ReportVectorIndexSummaryResponse]
+    total: int
+    page: int
+    page_size: int
+    query: str | None = None
+
+
 # ---------------------------------------------------------------------------
 # Error schema — consistent error envelope
 # ---------------------------------------------------------------------------

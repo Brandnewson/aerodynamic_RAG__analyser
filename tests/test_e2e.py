@@ -388,6 +388,28 @@ def test_report_lifecycle_workflow(client: TestClient):
     assert get_response.status_code == 200
     assert get_response.json()["title"] == "Workflow Report"
 
+    with patch(
+        "app.services.report_service.vector_store.list_chunks",
+        return_value=[
+            {
+                "id": f"report_{report_id}::chunk::0",
+                "document": "Workflow Report chunk content for index verification.",
+                "metadata": {
+                    "report_id": report_id,
+                    "title": "Workflow Report",
+                    "source_filename": "workflow.pdf",
+                    "author": "",
+                    "tags": "alpha,beta",
+                    "source_type": "report",
+                },
+            }
+        ],
+    ):
+        index_response = client.get("/api/v1/reports/index?query=workflow")
+    assert index_response.status_code == 200
+    assert index_response.json()["total"] == 1
+    assert index_response.json()["items"][0]["report_id"] == report_id
+
     with patch("app.services.report_service._embed_chunks", return_value=[[0.5, 0.6, 0.7]]):
         with patch("app.services.report_service.vector_store.delete_where"):
             with patch("app.services.report_service.vector_store.add_documents"):

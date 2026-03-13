@@ -148,6 +148,90 @@ def test_report_crud_flow(client: TestClient):
     assert missing_response.json()["code"] == "REPORT_NOT_FOUND"
 
 
+def test_list_indexed_reports_returns_grouped_results(client: TestClient):
+    with patch("app.services.report_service.extract_pdf_text", return_value="E" * 260):
+        with patch("app.services.report_service._embed_chunks", return_value=[[0.1, 0.2, 0.3], [0.3, 0.2, 0.1]]):
+            with patch("app.services.report_service.vector_store.add_documents"):
+                create_response = client.post(
+                    "/api/v1/reports",
+                    files=_pdf_upload_payload(),
+                    data={"title": "Indexable Report", "author": "Ops", "tags": "alpha,beta"},
+                )
+
+    assert create_response.status_code == 201
+
+    with patch(
+        "app.services.report_service.vector_store.list_chunks",
+        return_value=[
+            {
+                "id": "report_1::chunk::0",
+                "document": "Baseline wind tunnel result with alpha sweep.",
+                "metadata": {
+                    "report_id": 1,
+                    "title": "Indexable Report",
+                    "source_filename": "report.pdf",
+                    "author": "Ops",
+                    "tags": "alpha,beta",
+                    "source_type": "report",
+                },
+            },
+            {
+                "id": "report_1::chunk::1",
+                "document": "Secondary chunk discussing drag minimization.",
+                "metadata": {
+                    "report_id": 1,
+                    "title": "Indexable Report",
+                    "source_filename": "report.pdf",
+                    "author": "Ops",
+                    "tags": "alpha,beta",
+                    "source_type": "report",
+                },
+            },
+        ],
+    ):
+        response = client.get("/api/v1/reports/index")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 1
+    assert payload["items"][0]["report_id"] == 1
+    assert payload["items"][0]["indexed_chunk_count"] == 2
+    assert payload["items"][0]["matched_chunk_count"] == 2
+
+    with patch(
+        "app.services.report_service.vector_store.list_chunks",
+        return_value=[
+            {
+                "id": "report_1::chunk::0",
+                "document": "Baseline wind tunnel result with alpha sweep.",
+                "metadata": {
+                    "report_id": 1,
+                    "title": "Indexable Report",
+                    "source_filename": "report.pdf",
+                    "author": "Ops",
+                    "tags": "alpha,beta",
+                    "source_type": "report",
+                },
+            }
+        ],
+    ):
+        filtered = client.get("/api/v1/reports/index?query=alpha")
+
+    assert filtered.status_code == 200
+    assert filtered.json()["total"] == 1
+
+
+def test_list_indexed_reports_vector_store_failure_returns_503(client: TestClient):
+    with patch(
+        "app.services.report_service.vector_store.list_chunks",
+        side_effect=RuntimeError("vector down"),
+    ):
+        response = client.get("/api/v1/reports/index")
+
+    assert response.status_code == 503
+    assert response.json()["code"] == "VECTOR_STORE_ERROR"
+
+
 def test_update_and_delete_report_not_found(client: TestClient):
     update_response = client.put("/api/v1/reports/999", json={"title": "x" * 5})
     assert update_response.status_code == 404

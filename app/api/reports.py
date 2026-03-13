@@ -11,6 +11,8 @@ from app.domain.schemas import (
     ReportListResponse,
     ReportResponse,
     ReportSummaryResponse,
+    ReportVectorIndexListResponse,
+    ReportVectorIndexSummaryResponse,
     ReportUpdate,
 )
 from app.infrastructure.database import get_db
@@ -69,6 +71,41 @@ def list_reports(
     items, total = report_service.list_reports(db, page=page, page_size=page_size)
     summaries = [ReportSummaryResponse.model_validate(item) for item in items]
     return ReportListResponse(items=summaries, total=total, page=page, page_size=page_size)
+
+
+@router.get(
+    "/index",
+    response_model=ReportVectorIndexListResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Read reports from vector-store index",
+    responses={
+        503: {"model": ErrorResponse, "description": "Vector store unavailable"},
+    },
+)
+def list_indexed_reports(
+    query: str | None = Query(
+        None,
+        min_length=1,
+        description="Optional free-text search over indexed report metadata and chunk content.",
+    ),
+    page: int = Query(1, ge=1, description="Page number (1-based)."),
+    page_size: int = Query(20, ge=1, le=100, description="Records per page."),
+    db: Session = Depends(get_db),
+) -> ReportVectorIndexListResponse:
+    items, total = report_service.list_indexed_reports(
+        db,
+        query=query,
+        page=page,
+        page_size=page_size,
+    )
+    summaries = [ReportVectorIndexSummaryResponse.model_validate(item) for item in items]
+    return ReportVectorIndexListResponse(
+        items=summaries,
+        total=total,
+        page=page,
+        page_size=page_size,
+        query=query,
+    )
 
 
 @router.get(

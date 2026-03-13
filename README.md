@@ -80,6 +80,7 @@ GET    /api/v1/concepts/{id}/evaluation   # Get cached evaluation
 # Reports (PDF + vector store CRUD)
 POST   /api/v1/reports               # Upload a PDF report and index chunks
 GET    /api/v1/reports               # List reports (paginated)
+GET    /api/v1/reports/index         # Read/search indexed reports from vector metadata/content
 GET    /api/v1/reports/{id}          # Get full report details/content
 PUT    /api/v1/reports/{id}          # Update report metadata/content
 DELETE /api/v1/reports/{id}          # Delete report + indexed vectors
@@ -144,6 +145,16 @@ curl -X POST http://localhost:8001/api/v1/reports \
   -F "title=Wind Tunnel Post-Run" \
   -F "author=Aero Team" \
   -F "tags=wind-tunnel,validation"
+
+# Read report index from vector store (metadata + chunk text search)
+curl "http://localhost:8001/api/v1/reports/index?query=wind-tunnel"
+```
+
+### Generate API PDF Docs
+
+```bash
+uv sync --group docs
+uv run python scripts/generate_api_docs_pdf.py
 ```
 
 ---

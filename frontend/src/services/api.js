@@ -175,6 +175,17 @@ export const reportsApi = {
   },
 
   /**
+   * Read report summaries from vector-store metadata/chunks
+   */
+  listIndexed: async ({ query = '', page = 1, pageSize = 50 } = {}) => {
+    const params = new URLSearchParams({ page, page_size: pageSize });
+    if (query && query.trim()) {
+      params.append('query', query.trim());
+    }
+    return apiCall(`/reports/index?${params}`);
+  },
+
+  /**
    * Upload and create a report using multipart form data
    */
   create: async (formData) => {
