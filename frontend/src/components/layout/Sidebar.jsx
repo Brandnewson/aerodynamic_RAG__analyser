@@ -5,11 +5,16 @@ import {
   FileText, 
   Info, 
   Activity,
-  ChevronRight 
+  ChevronRight,
+  LogOut,
+  ShieldCheck,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
+import { useAuth } from '../../context/AuthContext';
+
 export default function Sidebar() {
+  const { user, logout } = useAuth();
   const navItems = [
     { 
       path: '/', 
@@ -114,6 +119,17 @@ export default function Sidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-cockpit-border">
+        <div className="mb-4 rounded border border-cockpit-secondary/30 bg-cockpit-bg/70 p-3">
+          <div className="flex items-center gap-2 text-cockpit-secondary">
+            <ShieldCheck className="w-4 h-4" />
+            <span className="text-xs font-mono uppercase tracking-wider">Authenticated</span>
+          </div>
+          <div className="mt-2 text-sm text-cockpit-text-primary font-mono">{user?.username || 'Unknown User'}</div>
+          <button onClick={logout} className="btn-outline mt-3 w-full flex items-center justify-center gap-2">
+            <LogOut className="w-4 h-4" />
+            Logout
+          </button>
+        </div>
         <div className="text-xs text-cockpit-text-muted font-mono">
           <div className="flex justify-between mb-1">
             <span>System Status</span>

@@ -10,10 +10,12 @@ Route layout:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ConceptNotFoundError
+from app.core.security import get_current_user
+from app.domain.models import User
 from app.domain.schemas import (
     ConceptCreate,
     ConceptListResponse,
@@ -44,6 +46,7 @@ router = APIRouter(prefix="/concepts", tags=["concepts"])
 )
 def create_concept(
     payload: ConceptCreate,
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ConceptResponse:
     """Create a new AeroConcept record with status ``SUBMITTED``."""
@@ -69,6 +72,7 @@ def list_concepts(
     ),
     page: int = Query(1, ge=1, description="Page number (1-based)."),
     page_size: int = Query(20, ge=1, le=100, description="Records per page."),
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ConceptListResponse:
     """Return a paginated, optionally filtered list of concepts."""
@@ -99,6 +103,7 @@ def list_concepts(
 )
 def get_concept(
     concept_id: int,
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ConceptResponse:
     concept = concept_service.get_concept_by_id(db, concept_id)
@@ -125,6 +130,7 @@ def get_concept(
 def update_concept(
     concept_id: int,
     payload: ConceptUpdate,
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ConceptResponse:
     """Partially update a concept.  Only provided fields are written."""
@@ -150,6 +156,7 @@ def update_concept(
 )
 def delete_concept(
     concept_id: int,
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> None:
     """Permanently delete a concept and its evaluation (if any)."""

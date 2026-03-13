@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o"  # Full GPT-4o for better reasoning (upgraded from mini)
 
+    # Authentication
+    JWT_SECRET: str = "change-me-in-env"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+
     # RAG retrieval
     RETRIEVAL_TOP_K: int = 10
 

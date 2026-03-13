@@ -6,6 +6,8 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ReportNotFoundError, ValidationError
+from app.core.security import get_current_user
+from app.domain.models import User
 from app.domain.schemas import (
     ErrorResponse,
     ReportListResponse,
@@ -35,6 +37,7 @@ async def create_report(
     title: str | None = Form(None),
     author: str | None = Form(None),
     tags: str | None = Form(None, description="Comma-separated tags"),
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ReportResponse:
     if not file.filename:
@@ -66,6 +69,7 @@ async def create_report(
 def list_reports(
     page: int = Query(1, ge=1, description="Page number (1-based)."),
     page_size: int = Query(20, ge=1, le=100, description="Records per page."),
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ReportListResponse:
     items, total = report_service.list_reports(db, page=page, page_size=page_size)
@@ -90,6 +94,7 @@ def list_indexed_reports(
     ),
     page: int = Query(1, ge=1, description="Page number (1-based)."),
     page_size: int = Query(20, ge=1, le=100, description="Records per page."),
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ReportVectorIndexListResponse:
     items, total = report_service.list_indexed_reports(
@@ -119,6 +124,7 @@ def list_indexed_reports(
 )
 def get_report(
     report_id: int,
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ReportResponse:
     report = report_service.get_report_by_id(db, report_id)
@@ -140,6 +146,7 @@ def get_report(
 def update_report(
     report_id: int,
     payload: ReportUpdate,
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ReportResponse:
     report = report_service.get_report_by_id(db, report_id)
@@ -159,6 +166,7 @@ def update_report(
 )
 def delete_report(
     report_id: int,
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> None:
     report = report_service.get_report_by_id(db, report_id)

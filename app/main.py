@@ -21,6 +21,7 @@ from sqlalchemy.exc import OperationalError
 from app.api import concepts as concepts_router
 from app.api import evaluations as evaluations_router
 from app.api import reports as reports_router
+from app.api import auth as auth_router
 from app.core.config import settings
 from app.core.exceptions import (
     AeroInsightError,
@@ -34,6 +35,10 @@ from app.core.exceptions import (
     DatabaseError,
     RateLimitError,
     ServiceUnavailableError,
+    AuthenticationError,
+    AuthorizationError,
+    InvalidCredentialsError,
+    UserAlreadyExistsError,
 )
 from app.infrastructure.database import init_db
 
@@ -90,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(concepts_router.router, prefix="/api/v1")
     app.include_router(evaluations_router.router, prefix="/api/v1")
     app.include_router(reports_router.router, prefix="/api/v1")
+    app.include_router(auth_router.router, prefix="/api/v1")
 
     # ------------------------------------------------------------------
     # Health-check endpoint (under /api/v1 for consistency)
@@ -301,6 +307,58 @@ def create_app() -> FastAPI:
             content={
                 "detail": exc.message,
                 "code": "SERVICE_UNAVAILABLE",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(AuthenticationError)
+    async def authentication_error_handler(
+        request: Request, exc: AuthenticationError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={
+                "detail": exc.message,
+                "code": "AUTHENTICATION_ERROR",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(InvalidCredentialsError)
+    async def invalid_credentials_handler(
+        request: Request, exc: InvalidCredentialsError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={
+                "detail": exc.message,
+                "code": "INVALID_CREDENTIALS",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(AuthorizationError)
+    async def authorization_error_handler(
+        request: Request, exc: AuthorizationError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={
+                "detail": exc.message,
+                "code": "AUTHORIZATION_ERROR",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(UserAlreadyExistsError)
+    async def user_exists_error_handler(
+        request: Request, exc: UserAlreadyExistsError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={
+                "detail": exc.message,
+                "code": "USER_ALREADY_EXISTS",
                 **exc.details,
             },
         )
