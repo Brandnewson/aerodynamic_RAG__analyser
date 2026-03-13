@@ -14,14 +14,18 @@ const API_BASE = '/api/v1';
  */
 async function apiCall(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+  const isFormData = options.body instanceof FormData;
   
   const config = {
     ...options,
     headers: {
-      'Content-Type': 'application/json',
       ...options.headers,
     },
   };
+
+  if (!isFormData && !config.headers['Content-Type']) {
+    config.headers['Content-Type'] = 'application/json';
+  }
 
   try {
     const response = await fetch(url, config);
@@ -147,6 +151,56 @@ export const evaluationsApi = {
    */
   get: async (conceptId) => {
     return apiCall(`/concepts/${conceptId}/evaluation`);
+  },
+};
+
+// ============================================================================
+// Reports API
+// ============================================================================
+
+export const reportsApi = {
+  /**
+   * List all reports with optional pagination
+   */
+  list: async ({ page = 1, pageSize = 50 } = {}) => {
+    const params = new URLSearchParams({ page, page_size: pageSize });
+    return apiCall(`/reports?${params}`);
+  },
+
+  /**
+   * Get a single report by ID
+   */
+  get: async (id) => {
+    return apiCall(`/reports/${id}`);
+  },
+
+  /**
+   * Upload and create a report using multipart form data
+   */
+  create: async (formData) => {
+    return apiCall('/reports', {
+      method: 'POST',
+      body: formData,
+    });
+  },
+
+  /**
+   * Update report metadata/content
+   */
+  update: async (id, data) => {
+    return apiCall(`/reports/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Delete a report
+   */
+  delete: async (id) => {
+    return apiCall(`/reports/${id}`, {
+      method: 'DELETE',
+    });
   },
 };
 

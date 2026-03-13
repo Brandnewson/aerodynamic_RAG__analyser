@@ -20,10 +20,12 @@ from sqlalchemy.exc import OperationalError
 
 from app.api import concepts as concepts_router
 from app.api import evaluations as evaluations_router
+from app.api import reports as reports_router
 from app.core.config import settings
 from app.core.exceptions import (
     AeroInsightError,
     ConceptNotFoundError,
+    ReportNotFoundError,
     EvaluationExistsError,
     EvaluationNotFoundError,
     ValidationError,
@@ -87,6 +89,7 @@ def create_app() -> FastAPI:
     # ------------------------------------------------------------------
     app.include_router(concepts_router.router, prefix="/api/v1")
     app.include_router(evaluations_router.router, prefix="/api/v1")
+    app.include_router(reports_router.router, prefix="/api/v1")
 
     # ------------------------------------------------------------------
     # Health-check endpoint (under /api/v1 for consistency)
@@ -168,6 +171,19 @@ def create_app() -> FastAPI:
             content={
                 "detail": exc.message,
                 "code": "CONCEPT_NOT_FOUND",
+                **exc.details,
+            },
+        )
+
+    @app.exception_handler(ReportNotFoundError)
+    async def report_not_found_handler(
+        request: Request, exc: ReportNotFoundError
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "detail": exc.message,
+                "code": "REPORT_NOT_FOUND",
                 **exc.details,
             },
         )

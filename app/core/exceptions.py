@@ -62,6 +62,17 @@ class EvaluationNotFoundError(AeroInsightError):
         self.concept_id = concept_id
 
 
+class ReportNotFoundError(AeroInsightError):
+    """Raised when a report with the given ID does not exist."""
+
+    def __init__(self, report_id: int):
+        super().__init__(
+            message=f"Report with id={report_id} was not found.",
+            details={"report_id": report_id},
+        )
+        self.report_id = report_id
+
+
 class ValidationError(AeroInsightError):
     """Raised when input validation fails."""
 

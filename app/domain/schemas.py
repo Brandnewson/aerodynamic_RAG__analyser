@@ -172,6 +172,67 @@ class EvaluationResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Report schemas
+# ---------------------------------------------------------------------------
+
+
+class ReportUpdate(BaseModel):
+    """Payload for PUT /reports/{id}. All fields are optional."""
+
+    title: str | None = Field(None, min_length=3, max_length=255)
+    content: str | None = Field(None, min_length=20)
+    author: str | None = Field(None, max_length=255)
+    tags: list[str] | None = None
+
+    @field_validator("tags", mode="before")
+    @classmethod
+    def _normalise_tags(cls, v: Any) -> list[str] | None:
+        if v is None:
+            return None
+        return [str(t).strip() for t in v if str(t).strip()]
+
+
+class ReportSummaryResponse(BaseModel):
+    """Compact report representation used in list responses."""
+
+    id: int
+    title: str
+    source_filename: str
+    author: str | None
+    tags: list[str]
+    chunk_count: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ReportResponse(BaseModel):
+    """Full report representation including extracted text content."""
+
+    id: int
+    title: str
+    source_filename: str
+    content: str
+    author: str | None
+    tags: list[str]
+    chunk_count: int
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ReportListResponse(BaseModel):
+    """Paginated list of reports."""
+
+    items: list[ReportSummaryResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+# ---------------------------------------------------------------------------
 # Error schema — consistent error envelope
 # ---------------------------------------------------------------------------
 

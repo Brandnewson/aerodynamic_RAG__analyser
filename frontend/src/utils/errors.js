@@ -49,6 +49,7 @@ export function parseApiError(error) {
  */
 export function getErrorMessage(errorCode, defaultMessage) {
   const messages = {
+    REPORT_NOT_FOUND: 'The requested report could not be found. It may have been deleted.',
     CONCEPT_NOT_FOUND: 'The requested concept could not be found. It may have been deleted.',
     EVALUATION_EXISTS: 'This concept has already been evaluated. Delete and recreate to re-evaluate.',
     EVALUATION_NOT_FOUND: 'No evaluation found for this concept. Please run evaluation first.',
@@ -139,6 +140,7 @@ export function formatErrorDisplay(error) {
  */
 function getErrorTitle(code) {
   const titles = {
+    REPORT_NOT_FOUND: 'Report Not Found',
     CONCEPT_NOT_FOUND: 'Concept Not Found',
     EVALUATION_EXISTS: 'Already Evaluated',
     EVALUATION_NOT_FOUND: 'Evaluation Not Found',

@@ -362,3 +362,49 @@ def test_update_preservation_of_evaluation(client: TestClient):
         assert get_eval_response.status_code == 200
         eval_data = get_eval_response.json()
         assert eval_data["novelty_score"] == 0.9  # Preserved
+
+
+def test_report_lifecycle_workflow(client: TestClient):
+    """Test complete report workflow: upload -> list -> get -> update -> delete."""
+
+    with patch("app.services.report_service.extract_pdf_text", return_value="D" * 260):
+        with patch("app.services.report_service._embed_chunks", return_value=[[0.1, 0.2, 0.3]]):
+            with patch("app.services.report_service.vector_store.add_documents"):
+                create_response = client.post(
+                    "/api/v1/reports",
+                    files={"file": ("workflow.pdf", b"%PDF-1.4 fake", "application/pdf")},
+                    data={"title": "Workflow Report", "tags": "alpha,beta"},
+                )
+
+    assert create_response.status_code == 201
+    report_id = create_response.json()["id"]
+    assert create_response.json()["chunk_count"] == 1
+
+    list_response = client.get("/api/v1/reports")
+    assert list_response.status_code == 200
+    assert list_response.json()["total"] == 1
+
+    get_response = client.get(f"/api/v1/reports/{report_id}")
+    assert get_response.status_code == 200
+    assert get_response.json()["title"] == "Workflow Report"
+
+    with patch("app.services.report_service._embed_chunks", return_value=[[0.5, 0.6, 0.7]]):
+        with patch("app.services.report_service.vector_store.delete_where"):
+            with patch("app.services.report_service.vector_store.add_documents"):
+                update_response = client.put(
+                    f"/api/v1/reports/{report_id}",
+                    json={
+                        "content": "Updated workflow report content that is long enough for validation.",
+                        "title": "Workflow Report v2",
+                    },
+                )
+
+    assert update_response.status_code == 200
+    assert update_response.json()["title"] == "Workflow Report v2"
+
+    with patch("app.services.report_service.vector_store.delete_where"):
+        delete_response = client.delete(f"/api/v1/reports/{report_id}")
+    assert delete_response.status_code == 204
+
+    get_deleted = client.get(f"/api/v1/reports/{report_id}")
+    assert get_deleted.status_code == 404

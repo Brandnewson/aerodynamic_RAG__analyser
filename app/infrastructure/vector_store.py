@@ -46,6 +46,16 @@ class VectorStore:
             metadatas=metadatas or [{} for _ in ids],
         )
 
+    def delete_by_ids(self, ids: list[str]) -> None:
+        """Delete vectors by exact ids."""
+        if not ids:
+            return
+        self._collection.delete(ids=ids)
+
+    def delete_where(self, where: dict) -> None:
+        """Delete vectors matching a metadata filter."""
+        self._collection.delete(where=where)
+
     # ------------------------------------------------------------------
     # Read
     # ------------------------------------------------------------------

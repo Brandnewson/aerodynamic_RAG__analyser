@@ -14,7 +14,7 @@ This document provides detailed technical information about AeroInsight's archit
                   ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                      API Layer (FastAPI)                        │
-│              Concept CRUD + Evaluation Endpoints                │
+│   Concept CRUD + Evaluation + Report CRUD/Upload Endpoints      │
 │                       Port 8001                                 │
 └──────┬──────────────────────────────────────────┬───────────────┘
        │                                          │
@@ -24,8 +24,8 @@ This document provides detailed technical information about AeroInsight's archit
 │  SQLite Database │                    │   RAG Pipeline         │
 │  - Concepts      │                    │  1. Text Embedding     │
 │  - Evaluations   │                    │  2. Vector Retrieval   │
-└──────────────────┘                    │  3. LLM Evaluation     │
-                                        └───┬──────────────┬─────┘
+│  - Reports       │                    │  3. LLM Evaluation     │
+└──────────────────┘                    └───┬──────────────┬─────┘
                                             │              │
                                             ▼              ▼
                                    ┌─────────────┐  ┌─────────────┐
@@ -34,6 +34,40 @@ This document provides detailed technical information about AeroInsight's archit
                                    └─────────────┘  │ JSON Output │
                                                     └─────────────┘
 ```
+
+---
+
+## Report Ingestion & Vector CRUD
+
+Reports are first-class resources with dedicated API endpoints (`/api/v1/reports`) and a synchronized vector index lifecycle.
+
+### Upload / Create Flow
+
+1. Frontend uploads PDF via multipart form data.
+2. `report_service.extract_pdf_text()` parses text using `pypdf`.
+3. Text is persisted in SQLite `reports` table.
+4. Text is chunked (`512` chars, `64` overlap).
+5. Chunks are embedded with `all-MiniLM-L6-v2`.
+6. Chunks are upserted into ChromaDB with deterministic ids:
+
+```text
+report_{report_id}::chunk::{chunk_index}
+```
+
+### Update Flow
+
+- Metadata-only updates persist directly in SQLite.
+- Content/title updates trigger re-index:
+1. Delete old vectors by metadata filter `{"report_id": <id>}`.
+2. Re-chunk and re-embed updated content.
+3. Upsert new vectors.
+
+### Delete Flow
+
+1. Delete vectors from ChromaDB by `report_id`.
+2. Delete report row from SQLite.
+
+This ordering prevents stale vectors after report deletion.
 
 ---
 
@@ -166,12 +200,27 @@ db.commit()
 │ summary                     │
 │ created_at                  │
 └─────────────────────────────┘
+
+┌─────────────────────────────┐
+│           Report            │
+├─────────────────────────────┤
+│ id (PK)                     │
+│ title                       │
+│ source_filename             │
+│ content                     │
+│ author                      │
+│ tags (JSON)                 │
+│ chunk_count                 │
+│ created_at                  │
+│ updated_at                  │
+└─────────────────────────────┘
 ```
 
 ### Key Constraints
 
 - **One-to-One**: Each concept has at most one evaluation
 - **Cascade Delete**: Deleting concept removes its evaluation
+- **Report-Vector Sync**: Report delete/update operations also delete/reindex vectors by `report_id`
 - **JSON Storage**: Arrays/objects stored as JSON strings (SQLite limitation)
 - **Status Enum**: `SUBMITTED` or `ANALYSED`
 
@@ -312,7 +361,7 @@ aerodynamic_RAG__analyser/
 │   ├── api/                      # API route handlers
 │   │   ├── concepts.py           # Concept CRUD endpoints
 │   │   ├── evaluations.py        # Evaluation endpoints
-│   │   └── health.py             # Health check
+│   │   └── reports.py            # Report upload/CRUD endpoints
 │   ├── core/                     # Core configurations
 │   │   ├── config.py             # Environment variables
 │   │   ├── database.py           # SQLAlchemy setup
@@ -321,7 +370,8 @@ aerodynamic_RAG__analyser/
 │   │   ├── models.py             # SQLAlchemy ORM models
 │   │   └── schemas.py            # Pydantic schemas
 │   ├── services/                 # Business logic
-│   │   └── rag_service.py        # RAG pipeline
+│   │   ├── rag_service.py        # RAG pipeline
+│   │   └── report_service.py     # PDF extraction + report indexing
 │   └── main.py                   # FastAPI app + exception handlers
 │
 ├── frontend/                     # React frontend
@@ -330,6 +380,7 @@ aerodynamic_RAG__analyser/
 │   │   │   ├── layout/           # Layout (Sidebar, Layout)
 │   │   │   ├── concepts/         # Concept components
 │   │   │   ├── evaluations/      # Evaluation displays
+│   │   │   ├── reports/          # Report CRUD components
 │   │   │   └── common/           # Reusable (Toast, ErrorBoundary)
 │   │   ├── pages/                # Page components
 │   │   ├── services/             # API layer
@@ -350,7 +401,8 @@ aerodynamic_RAG__analyser/
 │   ├── test_api_errors.py        # API error tests (16)
 │   ├── test_concepts.py          # CRUD tests (13)
 │   ├── test_database_errors.py   # DB transaction tests (13)
-│   └── test_e2e.py               # End-to-end tests (7)
+│   ├── test_e2e.py               # End-to-end tests (8)
+│   └── test_reports.py           # Report endpoint tests (5)
 │
 ├── chroma_storage/               # ChromaDB persistence
 ├── .env                          # Environment variables
@@ -371,7 +423,7 @@ aerodynamic_RAG__analyser/
 | GET | `/api/v1/concepts` | List concepts (filterable, paginated) |
 | GET | `/api/v1/concepts/{id}` | Get single concept |
 | POST | `/api/v1/concepts` | Create new concept |
-| PATCH | `/api/v1/concepts/{id}` | Update concept |
+| PUT | `/api/v1/concepts/{id}` | Update concept |
 | DELETE | `/api/v1/concepts/{id}` | Delete concept (cascade) |
 
 ### Evaluations
@@ -380,6 +432,16 @@ aerodynamic_RAG__analyser/
 |--------|----------|-------------|
 | POST | `/api/v1/concepts/{id}/evaluate` | Evaluate concept (RAG pipeline) |
 | GET | `/api/v1/concepts/{id}/evaluation` | Get cached evaluation |
+
+### Reports
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/v1/reports` | Upload PDF report and index into ChromaDB |
+| GET | `/api/v1/reports` | List reports (paginated) |
+| GET | `/api/v1/reports/{id}` | Get report details and extracted text |
+| PUT | `/api/v1/reports/{id}` | Update report metadata/content (reindex on content/title changes) |
+| DELETE | `/api/v1/reports/{id}` | Delete report and indexed vectors |
 
 ### Health & Discovery
 

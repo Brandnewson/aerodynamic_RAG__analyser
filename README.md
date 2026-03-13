@@ -9,6 +9,7 @@ Submit aerodynamic concepts → Get AI evaluations backed by real research paper
 1. **Vector Search**: Queries 31,652 chunks from 248 arXiv papers
 2. **LLM Evaluation**: GPT-4o analyzes novelty, mechanisms, and tradeoffs
 3. **Structured Output**: Novelty scores, confidence, regulatory flags, citations
+4. **Report CRUD + Indexing**: Upload/manage PDF reports and keep vectors synced in ChromaDB
 
 **Stack**: FastAPI + React + ChromaDB + OpenAI + SQLite
 
@@ -76,6 +77,13 @@ DELETE /api/v1/concepts/{id}         # Delete concept
 POST   /api/v1/concepts/{id}/evaluate     # Run RAG evaluation (~3-5s)
 GET    /api/v1/concepts/{id}/evaluation   # Get cached evaluation
 
+# Reports (PDF + vector store CRUD)
+POST   /api/v1/reports               # Upload a PDF report and index chunks
+GET    /api/v1/reports               # List reports (paginated)
+GET    /api/v1/reports/{id}          # Get full report details/content
+PUT    /api/v1/reports/{id}          # Update report metadata/content
+DELETE /api/v1/reports/{id}          # Delete report + indexed vectors
+
 # Health & Discovery
 GET    /api/v1/health                # System status
 GET    /api/v1/mcp                   # MCP tool discovery
@@ -91,14 +99,15 @@ GET    /api/v1/mcp                   # MCP tool discovery
 ### Run Tests
 
 ```bash
-# All tests (49 total - 100% passing)
+# All tests (55 total)
 uv run pytest tests/ -v
 
 # Specific suites
 uv run pytest tests/test_api_errors.py -v      # API error handling (16)
 uv run pytest tests/test_database_errors.py -v # DB transactions (13)
-uv run pytest tests/test_e2e.py -v             # End-to-end (7)
+uv run pytest tests/test_e2e.py -v             # End-to-end workflows (8)
 uv run pytest tests/test_concepts.py -v        # CRUD (13)
+uv run pytest tests/test_reports.py -v         # Report CRUD + vector sync (5)
 ```
 
 See [TESTING.md](TESTING.md) for comprehensive test documentation.
@@ -128,6 +137,13 @@ curl -X POST http://localhost:8001/api/v1/concepts \
 
 # Evaluate concept (replace {id})
 curl -X POST http://localhost:8001/api/v1/concepts/{id}/evaluate
+
+# Upload report (PDF)
+curl -X POST http://localhost:8001/api/v1/reports \
+  -F "file=@./sample_report.pdf" \
+  -F "title=Wind Tunnel Post-Run" \
+  -F "author=Aero Team" \
+  -F "tags=wind-tunnel,validation"
 ```
 
 ---
@@ -140,6 +156,7 @@ curl -X POST http://localhost:8001/api/v1/concepts/{id}/evaluate
 | `OpenAI API key not found` | Check `.env` file exists with valid key |
 | `ChromaDB collection not found` | Run `uv run python scripts/ingest_documents.py` |
 | `Port 8001 already in use` | Kill process or use different port: `--port 8002` |
+| `Only PDF files are supported` | Upload `.pdf` files only for `/api/v1/reports` |
 | `npm: command not found` | Install Node.js 20+ |
 | API calls returning CORS errors | Check Vite proxy config in `frontend/vite.config.js` |
 

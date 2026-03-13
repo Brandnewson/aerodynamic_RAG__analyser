@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { 
   Gauge, 
+  FolderOpen,
   FileText, 
   Info, 
   Activity,
@@ -15,6 +16,12 @@ export default function Sidebar() {
       label: 'Mission Control', 
       icon: Gauge,
       description: 'Main Dashboard'
+    },
+    {
+      path: '/reports',
+      label: 'Reports',
+      icon: FolderOpen,
+      description: 'Vector Report CRUD'
     },
     { 
       path: '/documentation', 

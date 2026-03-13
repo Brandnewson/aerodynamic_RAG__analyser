@@ -15,6 +15,7 @@
    - [Health & Discovery](#health--discovery)
    - [Concepts](#concepts)
    - [Evaluations](#evaluations)
+  - [Reports](#reports)
 5. [Data Models](#data-models)
 6. [Examples](#examples)
 
@@ -27,6 +28,7 @@ AeroInsight is a REST-based AI-augmented aerodynamic concept evaluation platform
 ### Key Features
 
 - **Concept Management**: Create, update, list, and delete aerodynamic concepts
+- **Report Management**: Upload, list, update, retrieve, and delete PDF reports indexed in ChromaDB
 - **RAG Evaluation**: AI-powered concept evaluation using GPT-4o and 31,652 chunks from 248 arXiv papers
 - **Citation Tracking**: Every evaluation includes citations from retrieved research papers
 - **MCP Integration**: Model Context Protocol support for agent-native workflows
@@ -79,6 +81,7 @@ All errors return a consistent JSON structure:
 | Code | HTTP Status | Description |
 |------|-------------|-------------|
 | `concept_not_found` | 404 | Concept with specified ID does not exist |
+| `report_not_found` | 404 | Report with specified ID does not exist |
 | `evaluation_not_found` | 404 | Evaluation for concept does not exist |
 | `evaluation_exists` | 409 | Concept already has an evaluation |
 | `validation_error` | 422 | Input validation failed |
@@ -318,7 +321,7 @@ curl http://localhost:8001/api/v1/concepts/1
 
 ---
 
-#### PATCH /concepts/{id}
+#### PUT /concepts/{id}
 
 Update an existing concept (partial update).
 
@@ -355,7 +358,7 @@ Update an existing concept (partial update).
 
 **Example Request:**
 ```bash
-curl -X PATCH http://localhost:8001/api/v1/concepts/1 \
+curl -X PUT http://localhost:8001/api/v1/concepts/1 \
   -H "Content-Type: application/json" \
   -d '{
     "title": "Updated ground effect diffuser design",
@@ -499,6 +502,132 @@ curl http://localhost:8001/api/v1/concepts/1/evaluation
 
 ---
 
+### Reports
+
+#### POST /reports
+
+Upload a PDF report, extract text, persist report metadata, and index report chunks in ChromaDB.
+
+**Request:** `multipart/form-data`
+
+| Field | Type | Required | Constraints | Description |
+|-------|------|----------|-------------|-------------|
+| `file` | file | ✅ | PDF only | Report file to upload |
+| `title` | string | ❌ | 3-255 chars (if provided) | Optional report title (defaults to filename stem) |
+| `author` | string | ❌ | max 255 chars | Report author |
+| `tags` | string | ❌ | comma-separated | Optional tags, e.g. `wind-tunnel,validation` |
+
+**Response:** `201 Created`
+
+```json
+{
+  "id": 1,
+  "title": "Wind Tunnel Run 27",
+  "source_filename": "run27.pdf",
+  "content": "Full extracted PDF text...",
+  "author": "Aero Team",
+  "tags": ["wind-tunnel", "validation"],
+  "chunk_count": 14,
+  "created_at": "2026-03-13T09:15:00Z",
+  "updated_at": "2026-03-13T09:15:00Z"
+}
+```
+
+**Example Request:**
+```bash
+curl -X POST http://localhost:8001/api/v1/reports \
+  -F "file=@./run27.pdf" \
+  -F "title=Wind Tunnel Run 27" \
+  -F "author=Aero Team" \
+  -F "tags=wind-tunnel,validation"
+```
+
+**Possible Errors:**
+- `422` - Validation error (non-PDF, unreadable PDF, short extracted text)
+- `503` - Vector store unavailable during indexing
+
+---
+
+#### GET /reports
+
+List reports with pagination.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Default | Constraints | Description |
+|-----------|------|----------|---------|-------------|-------------|
+| `page` | integer | ❌ | 1 | ≥ 1 | Page number (1-based) |
+| `page_size` | integer | ❌ | 20 | 1-100 | Items per page |
+
+**Response:** `200 OK`
+
+```json
+{
+  "items": [
+    {
+      "id": 1,
+      "title": "Wind Tunnel Run 27",
+      "source_filename": "run27.pdf",
+      "author": "Aero Team",
+      "tags": ["wind-tunnel", "validation"],
+      "chunk_count": 14,
+      "created_at": "2026-03-13T09:15:00Z",
+      "updated_at": "2026-03-13T09:15:00Z"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "page_size": 20
+}
+```
+
+---
+
+#### GET /reports/{id}
+
+Retrieve full details for a single report.
+
+**Response:** `200 OK`
+
+**Possible Errors:**
+- `404` - Report not found
+
+---
+
+#### PUT /reports/{id}
+
+Update report metadata and/or content. Updating title or content re-indexes the report vectors.
+
+**Request Body:** (all fields optional)
+
+| Field | Type | Constraints | Description |
+|-------|------|-------------|-------------|
+| `title` | string | 3-255 chars | Updated title |
+| `content` | string | 20+ chars | Updated extracted text |
+| `author` | string | max 255 chars | Updated author |
+| `tags` | array[string] | - | Updated tags |
+
+**Response:** `200 OK`
+
+**Possible Errors:**
+- `404` - Report not found
+- `422` - Validation error
+- `503` - Vector store unavailable during re-index
+
+---
+
+#### DELETE /reports/{id}
+
+Delete report from SQLite and remove indexed vectors from ChromaDB.
+
+**Response:** `204 No Content`
+
+**Possible Errors:**
+- `404` - Report not found
+- `503` - Vector store unavailable during deletion
+
+---
+
 ## Data Models
 
 ### ConceptCreate
@@ -560,6 +689,41 @@ Response model for evaluation results.
 
 ---
 
+### ReportSummaryResponse
+
+List response model for reports.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Unique identifier |
+| `title` | string | Report title |
+| `source_filename` | string | Uploaded file name |
+| `author` | string \| null | Optional author |
+| `tags` | array[string] | Report tags |
+| `chunk_count` | integer | Number of indexed vector chunks |
+| `created_at` | datetime | Creation timestamp |
+| `updated_at` | datetime | Last update timestamp |
+
+---
+
+### ReportResponse
+
+Detailed response model for a single report.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Unique identifier |
+| `title` | string | Report title |
+| `source_filename` | string | Uploaded file name |
+| `content` | string | Extracted report text |
+| `author` | string \| null | Optional author |
+| `tags` | array[string] | Report tags |
+| `chunk_count` | integer | Number of indexed chunks |
+| `created_at` | datetime | Creation timestamp |
+| `updated_at` | datetime | Last update timestamp |
+
+---
+
 ### RetrievedChunk
 
 Citation with retrieved text and similarity score.
@@ -614,7 +778,7 @@ curl -X POST "http://localhost:8001/api/v1/concepts/$CONCEPT/evaluate" | jq
 curl "http://localhost:8001/api/v1/concepts/$CONCEPT/evaluation" | jq
 
 # 5. Update concept
-curl -X PATCH "http://localhost:8001/api/v1/concepts/$CONCEPT" \
+curl -X PUT "http://localhost:8001/api/v1/concepts/$CONCEPT" \
   -H "Content-Type: application/json" \
   -d '{
     "tags": ["vortex-generator", "interference-drag", "wing-body", "validated"]
