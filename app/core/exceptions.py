@@ -142,3 +142,34 @@ class ServiceUnavailableError(AeroInsightError):
         msg = message or f"Service {service} is temporarily unavailable."
         super().__init__(message=msg, details={"service": service})
         self.service = service
+
+
+class AuthenticationError(AeroInsightError):
+    """Raised when a request cannot be authenticated."""
+
+    def __init__(self, message: str = "Authentication required."):
+        super().__init__(message=message)
+
+
+class AuthorizationError(AeroInsightError):
+    """Raised when an authenticated user is not allowed to perform an action."""
+
+    def __init__(self, message: str = "You are not authorized to perform this action."):
+        super().__init__(message=message)
+
+
+class InvalidCredentialsError(AeroInsightError):
+    """Raised when login credentials are invalid."""
+
+    def __init__(self):
+        super().__init__(message="Invalid username or password.")
+
+
+class UserAlreadyExistsError(AeroInsightError):
+    """Raised when a user with the same username already exists."""
+
+    def __init__(self, username: str):
+        super().__init__(
+            message=f"User '{username}' already exists.",
+            details={"username": username},
+        )
