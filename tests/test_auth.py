@@ -44,14 +44,14 @@ def client():
 def test_register_login_and_get_me(client: TestClient):
     register = client.post(
         "/api/v1/auth/register",
-        json={"username": "testuser", "password": "supersecret123"},
+        json={"username": "testuser", "password": "Supersecret1!"},
     )
     assert register.status_code == 201
     assert register.json()["username"] == "testuser"
 
     login = client.post(
         "/api/v1/auth/login",
-        json={"username": "testuser", "password": "supersecret123"},
+        json={"username": "testuser", "password": "Supersecret1!"},
     )
     assert login.status_code == 200
     token = login.json()["access_token"]
@@ -66,7 +66,7 @@ def test_register_login_and_get_me(client: TestClient):
 
 
 def test_register_duplicate_username_returns_409(client: TestClient):
-    payload = {"username": "duplicate", "password": "supersecret123"}
+    payload = {"username": "duplicate", "password": "Supersecret1!"}
     first = client.post("/api/v1/auth/register", json=payload)
     assert first.status_code == 201
 
@@ -75,10 +75,24 @@ def test_register_duplicate_username_returns_409(client: TestClient):
     assert second.json()["code"] == "USER_ALREADY_EXISTS"
 
 
+def test_register_rejects_password_without_number_or_special_character(client: TestClient):
+    no_number = client.post(
+        "/api/v1/auth/register",
+        json={"username": "nonumber", "password": "password!"},
+    )
+    assert no_number.status_code == 422
+
+    no_special = client.post(
+        "/api/v1/auth/register",
+        json={"username": "nospecial", "password": "password1"},
+    )
+    assert no_special.status_code == 422
+
+
 def test_login_invalid_credentials_returns_401(client: TestClient):
     client.post(
         "/api/v1/auth/register",
-        json={"username": "tester", "password": "supersecret123"},
+        json={"username": "tester", "password": "Supersecret1!"},
     )
 
     login = client.post(
@@ -91,5 +105,11 @@ def test_login_invalid_credentials_returns_401(client: TestClient):
 
 def test_me_requires_bearer_token(client: TestClient):
     response = client.get("/api/v1/auth/me")
+    assert response.status_code == 401
+    assert response.json()["code"] == "AUTHENTICATION_ERROR"
+
+
+def test_protected_business_route_requires_bearer_token(client: TestClient):
+    response = client.get("/api/v1/concepts")
     assert response.status_code == 401
     assert response.json()["code"] == "AUTHENTICATION_ERROR"

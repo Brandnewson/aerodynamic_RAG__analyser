@@ -17,6 +17,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 from unittest.mock import patch, MagicMock
 
+from tests.auth_helpers import authenticate_client
 from app.infrastructure.database import Base, get_db
 from app.main import app
 from app.core.exceptions import VectorStoreError, LLMServiceError, DatabaseError
@@ -49,7 +50,9 @@ def client():
     """Provide a TestClient backed by an isolated in-memory SQLite database."""
     Base.metadata.create_all(bind=test_engine)
     app.dependency_overrides[get_db] = _override_get_db
-    yield TestClient(app)
+    with TestClient(app) as c:
+        authenticate_client(c)
+        yield c
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=test_engine)
 
@@ -314,6 +317,7 @@ def test_unexpected_error_returns_500(client: TestClient):
     # Create a new TestClient that doesn't raise server exceptions
     # so we can test the error response
     test_client = TestClient(app, raise_server_exceptions=False)
+    authenticate_client(test_client, username="runtime_error_user")
     
     # Mock service to raise unexpected exception
     with patch(

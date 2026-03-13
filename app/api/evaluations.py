@@ -7,7 +7,7 @@ Route layout:
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import (
@@ -15,6 +15,8 @@ from app.core.exceptions import (
     EvaluationExistsError,
     EvaluationNotFoundError,
 )
+from app.core.security import get_current_user
+from app.domain.models import User
 from app.domain.schemas import ErrorResponse, EvaluationResponse
 from app.infrastructure.database import get_db
 from app.services import concept_service
@@ -43,6 +45,7 @@ router = APIRouter(prefix="/concepts", tags=["evaluations"])
 )
 def evaluate_concept(
     concept_id: int,
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> EvaluationResponse:
     """Run the RAG pipeline and store a structured evaluation.
@@ -95,6 +98,7 @@ def evaluate_concept(
 )
 def get_evaluation(
     concept_id: int,
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> EvaluationResponse:
     """Retrieve stored evaluation and re-fetch retrieved context from ChromaDB."""

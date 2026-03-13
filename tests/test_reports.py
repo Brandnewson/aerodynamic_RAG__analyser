@@ -10,6 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from tests.auth_helpers import authenticate_client
 from app.infrastructure.database import Base, get_db
 from app.main import app
 
@@ -38,6 +39,7 @@ def client():
     Base.metadata.create_all(bind=test_engine)
     app.dependency_overrides[get_db] = _override_get_db
     with TestClient(app) as c:
+        authenticate_client(c)
         yield c
     app.dependency_overrides.clear()
     Base.metadata.drop_all(bind=test_engine)

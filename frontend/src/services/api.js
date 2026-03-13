@@ -8,6 +8,63 @@
 import { ApiError, isNetworkError } from '../utils/errors';
 
 const API_BASE = '/api/v1';
+const AUTH_STORAGE_KEY = 'aeroinsight_auth';
+
+function formatErrorMessage(errorData, fallbackStatusText) {
+  const detail = errorData?.detail;
+
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail;
+  }
+
+  if (Array.isArray(detail) && detail.length > 0) {
+    const firstIssue = detail[0];
+    if (typeof firstIssue === 'string') {
+      return firstIssue;
+    }
+    if (firstIssue?.loc && firstIssue?.msg) {
+      const field = firstIssue.loc[firstIssue.loc.length - 1];
+      return `${field}: ${firstIssue.msg}`;
+    }
+    if (firstIssue?.msg) {
+      return firstIssue.msg;
+    }
+  }
+
+  if (typeof errorData?.message === 'string' && errorData.message.trim()) {
+    return errorData.message;
+  }
+
+  return fallbackStatusText;
+}
+
+export function getStoredToken() {
+  const raw = window.sessionStorage.getItem(AUTH_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw).token || null;
+  } catch {
+    return null;
+  }
+}
+
+export function getStoredUser() {
+  const raw = window.sessionStorage.getItem(AUTH_STORAGE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw).user || null;
+  } catch {
+    return null;
+  }
+}
+
+export function storeAuthSession(token, user) {
+  window.sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ token, user }));
+}
+
+export function clearAuthSession() {
+  window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+}
 
 /**
  * Generic fetch wrapper with enhanced error handling
@@ -15,6 +72,8 @@ const API_BASE = '/api/v1';
 async function apiCall(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
   const isFormData = options.body instanceof FormData;
+  const token = getStoredToken();
+  const isAuthRoute = endpoint.startsWith('/auth/login') || endpoint.startsWith('/auth/register');
   
   const config = {
     ...options,
@@ -22,6 +81,10 @@ async function apiCall(endpoint, options = {}) {
       ...options.headers,
     },
   };
+
+  if (token && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
 
   if (!isFormData && !config.headers['Content-Type']) {
     config.headers['Content-Type'] = 'application/json';
@@ -43,10 +106,14 @@ async function apiCall(endpoint, options = {}) {
       }
       
       // Throw structured ApiError
+      const message = formatErrorMessage(
+        errorData,
+        `HTTP ${response.status}: ${response.statusText}`,
+      );
       throw new ApiError(
         response.status,
         errorData,
-        errorData.detail || errorData.message
+        message
       );
     }
 
@@ -58,6 +125,13 @@ async function apiCall(endpoint, options = {}) {
     return await response.json();
   } catch (error) {
     console.error(`API Error [${endpoint}]:`, error);
+
+    if (error instanceof ApiError && error.status === 401 && !isAuthRoute) {
+      clearAuthSession();
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/register') {
+        window.location.assign('/login');
+      }
+    }
     
     // If it's already an ApiError, re-throw it
     if (error instanceof ApiError) {
@@ -212,6 +286,30 @@ export const reportsApi = {
     return apiCall(`/reports/${id}`, {
       method: 'DELETE',
     });
+  },
+};
+
+// ============================================================================
+// Auth API
+// ============================================================================
+
+export const authApi = {
+  register: async (data) => {
+    return apiCall('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  login: async (data) => {
+    return apiCall('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  me: async () => {
+    return apiCall('/auth/me');
   },
 };
 
